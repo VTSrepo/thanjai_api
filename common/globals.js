@@ -1,0 +1,21 @@
+
+var NUMBER_OF_ROWS_PAGE = 20;
+var CREATED_STATUS = 'C';
+var PENDING_STATUS = 'P';
+var ACTIVE_STATUS = 'A';
+var FAILURE_STATUS = 'F';
+var HOLD_STATUS = 'H';
+var ISSUE_STATUS = 'I';
+var REDEEM_STATUS = 'R';
+
+module.exports = {
+    //General Constant Values
+    NUMBER_OF_ROWS_PAGE,
+    PENDING_STATUS,
+    ACTIVE_STATUS,
+    FAILURE_STATUS,
+    HOLD_STATUS,
+    ISSUE_STATUS,
+    REDEEM_STATUS,
+    CREATED_STATUS,
+}
