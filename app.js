@@ -126,7 +126,26 @@ app.get('/productsorg/:org_id', function (req, res) {
 })
 
 
-app.get('/prodsellingprice/:org_id/:branch_id/:product_id', function (req, res) {
+// app.get('/prodsellingprice/:org_id/:branch_id/:product_id', function (req, res) {
+//   var event = {stageVariables: {'env': 'dev'}};
+//   var productAction = new ProductAction();
+//   event.headers = req.headers;
+//   event.pathParameters = req.params;
+//   event.queryParameters = aqp(req.query);
+//   productAction.GetProductSellingPrice(event, {
+//     done: function (rescode, resmsg) {
+//       res.header(resmsg.headers);
+//       res.status(resmsg.statusCode);
+//       res.send(resmsg.body)
+//     }
+//   })
+// })
+
+
+
+
+
+app.get('/prodsellingprice/:product_id', function (req, res) {
   var event = {stageVariables: {'env': 'dev'}};
   var productAction = new ProductAction();
   event.headers = req.headers;
@@ -141,17 +160,15 @@ app.get('/prodsellingprice/:org_id/:branch_id/:product_id', function (req, res) 
   })
 })
 
-
-
-
-
-app.get('/prodsellingprice/:product_id', function (req, res) {
+app.post('/sellingprice', function (req, res) { 
   var event = {stageVariables: {'env': 'dev'}};
   var productAction = new ProductAction();
   event.headers = req.headers;
+  event.body = req.body;
   event.pathParameters = req.params;
   event.queryParameters = aqp(req.query);
-  productAction.GetProductMasterOrgId(event, {
+  console.log("Create Selling Price");
+  productAction.CreateProductPricing(event, {
     done: function (rescode, resmsg) {
       res.header(resmsg.headers);
       res.status(resmsg.statusCode);
