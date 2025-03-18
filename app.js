@@ -12,7 +12,7 @@ const { UserAction } = require('./lib/action/user_action');
 const { ProductAction } = require('./lib/action/product_action');
 const { MasterAction } = require('./lib/action/master_action');
 const { BusinessAction } = require('./lib/action/business_action');
-const path = require('path');
+const { IndentAction } = require('./lib/action/indent_action');
 // Serve static files from the React app build folder under /v1
 app.use('/', express.static(path.join(__dirname, 'client', 'build')));
 
@@ -241,5 +241,33 @@ app.get('/category', function (req, res) {
   })
 })
 
+app.post('/indent', function (req, res) {
+  var event = {stageVariables: {'env': 'dev'}};
+  var indentAction = new IndentAction();
+  event.headers = req.headers;
+  event.body = req.body;
+  event.queryParameters = aqp(req.query);
+  indentAction.createIndent(event, {
+    done: function (rescode, resmsg) {
+      res.header(resmsg.headers);
+      res.status(resmsg.statusCode);
+      res.send(resmsg.body)
+    }
+  })
+})
+app.get('/indents/:branch_id/:kitchen_id', function (req, res){
+  var event = {stageVariables: {'env': 'dev'}};
+  var indentAction = new IndentAction();
+  event.headers = req.headers;
+  event.body = req.body;
+  event.queryParameters = aqp(req.query);
+  indentAction.GetIndentListsByBranchId(event, {
+    done: function (rescode, resmsg) {
+      res.header(resmsg.headers);
+      res.status(resmsg.statusCode);
+      res.send(resmsg.body)
+    }
+  })  
+})
 
 module.exports = app;
