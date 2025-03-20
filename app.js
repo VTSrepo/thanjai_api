@@ -255,13 +255,30 @@ app.post('/indent', function (req, res) {
     }
   })
 })
-app.get('/indents/:branch_id/:kitchen_id', function (req, res){
+app.get('/indents/:org_id', function (req, res){
   var event = {stageVariables: {'env': 'dev'}};
   var indentAction = new IndentAction();
   event.headers = req.headers;
   event.body = req.body;
+  event.pathParameters = req.params;
   event.queryParameters = aqp(req.query);
-  indentAction.GetIndentListsByBranchId(event, {
+  indentAction.GetIndentList(event, {
+    done: function (rescode, resmsg) {
+      res.header(resmsg.headers);
+      res.status(resmsg.statusCode);
+      res.send(resmsg.body)
+    }
+  })  
+})
+
+app.get('/indentdetail/:org_id', function (req, res){
+  var event = {stageVariables: {'env': 'dev'}};
+  var indentAction = new IndentAction();
+  event.headers = req.headers;
+  event.body = req.body;
+  event.pathParameters = req.params;
+  event.queryParameters = aqp(req.query);
+  indentAction.GetIndentDetail(event, {
     done: function (rescode, resmsg) {
       res.header(resmsg.headers);
       res.status(resmsg.statusCode);
