@@ -13,6 +13,7 @@ const { ProductAction } = require('./lib/action/product_action');
 const { MasterAction } = require('./lib/action/master_action');
 const { BusinessAction } = require('./lib/action/business_action');
 const { IndentAction } = require('./lib/action/indent_action');
+const path = require('path');
 // Serve static files from the React app build folder under /v1
 app.use('/', express.static(path.join(__dirname, 'client', 'build')));
 
