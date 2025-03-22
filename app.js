@@ -275,7 +275,7 @@ app.get('/indentdetail/:org_id', function (req, res){
   var event = {stageVariables: {'env': 'dev'}};
   var indentAction = new IndentAction();
   event.headers = req.headers;
-  event.body = req.body;
+ // event.body = req.body;
   event.pathParameters = req.params;
   event.queryParameters = aqp(req.query);
   indentAction.GetIndentDetail(event, {
