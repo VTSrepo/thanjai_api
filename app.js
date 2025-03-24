@@ -13,6 +13,8 @@ const { ProductAction } = require('./lib/action/product_action');
 const { MasterAction } = require('./lib/action/master_action');
 const { BusinessAction } = require('./lib/action/business_action');
 const { IndentAction } = require('./lib/action/indent_action');
+const { ProductionAction } = require('./lib/action/production_action');
+const path = require('path');
 // Serve static files from the React app build folder under /v1
 app.use('/', express.static(path.join(__dirname, 'client', 'build')));
 
@@ -99,53 +101,6 @@ app.get('/branchproducts/:branch_id', function (req, res) {
     }
   })
 })
-
-app.get('/productstemp/:branch_id', function (req, res) {
-  var event = {stageVariables: {'env': 'dev'}};
-  var productAction = new ProductAction();
-  event.headers = req.headers;
-  event.pathParameters = req.params;
-  event.queryParameters = aqp(req.query);
-  productAction.GetProducts(event, {
-    done: function (rescode, resmsg) {
-      res.header(resmsg.headers);
-      res.status(resmsg.statusCode);
-      res.send(resmsg.body)
-    }
-  })
-})
-app.get('/productsorg/:org_id', function (req, res) {
-  var event = {stageVariables: {'env': 'dev'}};
-  var productAction = new ProductAction();
-  event.headers = req.headers;
-  event.pathParameters = req.params;
-  event.queryParameters = aqp(req.query);
-  productAction.GetProductsOrgId(event, {
-    done: function (rescode, resmsg) {
-      res.header(resmsg.headers);
-      res.status(resmsg.statusCode);
-      res.send(resmsg.body)
-    }
-  })
-})
-
-
-// app.get('/prodsellingprice/:org_id/:branch_id/:product_id', function (req, res) {
-//   var event = {stageVariables: {'env': 'dev'}};
-//   var productAction = new ProductAction();
-//   event.headers = req.headers;
-//   event.pathParameters = req.params;
-//   event.queryParameters = aqp(req.query);
-//   productAction.GetProductSellingPrice(event, {
-//     done: function (rescode, resmsg) {
-//       res.header(resmsg.headers);
-//       res.status(resmsg.statusCode);
-//       res.send(resmsg.body)
-//     }
-//   })
-// })
-
-
 
 
 
@@ -286,5 +241,54 @@ app.get('/indentdetail/:org_id', function (req, res){
     }
   })  
 })
+
+app.get('/production-monitoring/:org_id', function (req, res) {
+  var event = {stageVariables: {'env': 'dev'}};
+  var productionAction = new ProductionAction();
+  event.headers = req.headers;
+  event.pathParameters = req.params;
+  event.queryParameters = aqp(req.query);
+  productionAction.GetProductions(event, {
+    done: function (rescode, resmsg) {
+      res.header(resmsg.headers);
+      res.status(resmsg.statusCode);
+      res.send(resmsg.body)
+    }
+  })
+})
+
+app.post('/production-monitoring', function (req, res) { 
+  var event = {stageVariables: {'env': 'dev'}};
+  var productionAction = new ProductionAction();
+  event.headers = req.headers;
+  event.body = req.body;
+  event.pathParameters = req.params;
+  event.queryParameters = aqp(req.query);
+  console.log("Create Emp Product");
+  productionAction.CreateProduction(event, {
+    done: function (rescode, resmsg) {
+      res.header(resmsg.headers);
+      res.status(resmsg.statusCode);
+      res.send(resmsg.body)
+    }
+  })
+})
+
+app.get('/employees/:org_id', function (req, res) {
+  var event = {stageVariables: {'env': 'dev'}};
+  var productionAction = new ProductionAction();
+  event.headers = req.headers;
+  event.pathParameters = req.params;
+  event.queryParameters = aqp(req.query);
+  productionAction.GetEmployees(event, {
+    done: function (rescode, resmsg) {
+      res.header(resmsg.headers);
+      res.status(resmsg.statusCode);
+      res.send(resmsg.body)
+    }
+  })
+})
+
+
 
 module.exports = app;
