@@ -1,4 +1,4 @@
-const mysql = require('mysql');
+const mysql = require('mysql2');
 var debug = require('debug')('v1:gateway:utils');
 
 const read_config = {

@@ -22,6 +22,7 @@
     "moment-timezone": "^0.5.33",
     "mysql": "^2.18.1",
     "mysql-connection-pool-manager": "^1.5.9",
+    "mysql2": "^3.14.0",
     "serverless-apigw-binary": "^0.4.4",
     "swagger-jsdoc": "^3.5.0",
     "swagger-ui-express": "^4.1.3",
