@@ -1,6 +1,5 @@
 # Node.js dependencies
 node_modules/
-client/
 
 # Log files
 npm-debug.log
