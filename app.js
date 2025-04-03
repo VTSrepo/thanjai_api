@@ -14,6 +14,7 @@ const { MasterAction } = require('./lib/action/master_action');
 const { BusinessAction } = require('./lib/action/business_action');
 const { IndentAction } = require('./lib/action/indent_action');
 const { ProductionAction } = require('./lib/action/production_action');
+const { DashboardAction } = require('./lib/action/dashboard_action');
 const path = require('path');
 // Serve static files from the React app build folder under /v1
 app.use('/', express.static(path.join(__dirname, 'client', 'build')));
@@ -281,6 +282,22 @@ app.get('/employees/:org_id', function (req, res) {
   event.pathParameters = req.params;
   event.queryParameters = aqp(req.query);
   productionAction.GetEmployees(event, {
+    done: function (rescode, resmsg) {
+      res.header(resmsg.headers);
+      res.status(resmsg.statusCode);
+      res.send(resmsg.body)
+    }
+  })
+})
+
+
+app.get('/product-dashboard/:org_id', function (req, res) {
+  var event = {stageVariables: {'env': 'dev'}};
+  var dashboardAction = new DashboardAction();
+  event.headers = req.headers;
+  event.pathParameters = req.params;
+  event.queryParameters = aqp(req.query);
+  dashboardAction.GetProductDashboard(event, {
     done: function (rescode, resmsg) {
       res.header(resmsg.headers);
       res.status(resmsg.statusCode);
