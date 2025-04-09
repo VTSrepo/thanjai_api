@@ -306,6 +306,38 @@ app.get('/product-dashboard/:org_id', function (req, res) {
   })
 })
 
+app.post('/employee', function (req, res) {
+  var event = { stageVariables: { 'env': 'dev' } };
+  var productionAction = new ProductionAction();
+  event.headers = req.headers;
+  event.body = req.body;
+  event.pathParameters = req.params;
+  event.queryParameters = aqp(req.query);
+  console.log("Create Emp Product");
+  productionAction.CreateEmployee(event, {
+    done: function (rescode, resmsg) {
+      res.header(resmsg.headers);
+      res.status(resmsg.statusCode);
+      res.send(resmsg.body)
+    }
+  })
+})
+
+app.get('/branches/:org_id', function (req, res) {
+  var event = { stageVariables: { 'env': 'dev' } };
+  var masterAction = new MasterAction();
+  event.headers = req.headers;
+  event.pathParameters = req.params;
+  event.queryParameters = aqp(req.query);
+  masterAction.GetBranchList(event, {
+    done: function (rescode, resmsg) {
+      res.header(resmsg.headers);
+      res.status(resmsg.statusCode);
+      res.send(resmsg.body)
+    }
+  })
+})
+
 
 
 module.exports = app;
