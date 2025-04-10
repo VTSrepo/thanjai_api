@@ -306,6 +306,21 @@ app.get('/product-dashboard/:org_id', function (req, res) {
   })
 })
 
+app.get('/production-report/:org_id', function (req, res) {
+  var event = {stageVariables: {'env': 'dev'}};
+  var dashboardAction = new DashboardAction();
+  event.headers = req.headers;
+  event.pathParameters = req.params;
+  event.queryParameters = aqp(req.query);
+  dashboardAction.GetProductionReport(event, {
+    done: function (rescode, resmsg) {
+      res.header(resmsg.headers);
+      res.status(resmsg.statusCode);
+      res.send(resmsg.body)
+    }
+  })
+})
+
 
 
 module.exports = app;
