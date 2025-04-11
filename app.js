@@ -1,32 +1,32 @@
-const express = require('express');
-const bodyParser = require('body-parser');
+const express = require("express");
+const bodyParser = require("body-parser");
 //const multer = require('multer');
 const app = express();
-const cors = require('cors');
+const cors = require("cors");
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
-app.use(bodyParser.json({ limit: '100mb' }))
-app.use(cors({origin:'*'}));
-const aqp = require('api-query-params');
-const { UserAction } = require('./lib/action/user_action');
-const { ProductAction } = require('./lib/action/product_action');
-const { MasterAction } = require('./lib/action/master_action');
-const { BusinessAction } = require('./lib/action/business_action');
-const { IndentAction } = require('./lib/action/indent_action');
-const { ProductionAction } = require('./lib/action/production_action');
-const { DashboardAction } = require('./lib/action/dashboard_action');
-const path = require('path');
+app.use(bodyParser.json({ limit: "100mb" }));
+app.use(cors({ origin: "*" }));
+const aqp = require("api-query-params");
+const { UserAction } = require("./lib/action/user_action");
+const { ProductAction } = require("./lib/action/product_action");
+const { MasterAction } = require("./lib/action/master_action");
+const { BusinessAction } = require("./lib/action/business_action");
+const { IndentAction } = require("./lib/action/indent_action");
+const { ProductionAction } = require("./lib/action/production_action");
+const { DashboardAction } = require("./lib/action/dashboard_action");
+const { TimesheetAction } = require("./lib/action/timesheet_action");
+const path = require("path");
 // Serve static files from the React app build folder under /v1
-app.use('/', express.static(path.join(__dirname, 'client', 'build')));
+app.use("/", express.static(path.join(__dirname, "client", "build")));
 
 // Catch-all route to serve index.html for all routes under /v1 (for client-side routing)
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'client', 'build', 'index.html'));
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "client", "build", "index.html"));
 });
 
-
-app.post('/login', function (req, res) {
-  var event = {stageVariables: {'env': 'dev'}};
+app.post("/login", function (req, res) {
+  var event = { stageVariables: { env: "dev" } };
   var userAction = new UserAction();
   event.headers = req.headers;
   event.body = req.body;
@@ -35,13 +35,13 @@ app.post('/login', function (req, res) {
     done: function (rescode, resmsg) {
       res.header(resmsg.headers);
       res.status(resmsg.statusCode);
-      res.send(resmsg.body)
-    }
-  })
-})
+      res.send(resmsg.body);
+    },
+  });
+});
 
-app.get('/product/:product_id', function (req, res) {
-  var event = {stageVariables: {'env': 'dev'}};
+app.get("/product/:product_id", function (req, res) {
+  var event = { stageVariables: { env: "dev" } };
   var productAction = new ProductAction();
   event.headers = req.headers;
   event.pathParameters = req.params;
@@ -50,12 +50,12 @@ app.get('/product/:product_id', function (req, res) {
     done: function (rescode, resmsg) {
       res.header(resmsg.headers);
       res.status(resmsg.statusCode);
-      res.send(resmsg.body)
-    }
-  })
-})
-app.post('/product', function (req, res) { 
-  var event = {stageVariables: {'env': 'dev'}};
+      res.send(resmsg.body);
+    },
+  });
+});
+app.post("/product", function (req, res) {
+  var event = { stageVariables: { env: "dev" } };
   var productAction = new ProductAction();
   event.headers = req.headers;
   event.body = req.body;
@@ -66,12 +66,12 @@ app.post('/product', function (req, res) {
     done: function (rescode, resmsg) {
       res.header(resmsg.headers);
       res.status(resmsg.statusCode);
-      res.send(resmsg.body)
-    }
-  })
-})
-app.get('/products/:org_id', function (req, res) {
-  var event = {stageVariables: {'env': 'dev'}};
+      res.send(resmsg.body);
+    },
+  });
+});
+app.get("/products/:org_id", function (req, res) {
+  var event = { stageVariables: { env: "dev" } };
   var productAction = new ProductAction();
   event.headers = req.headers;
   event.pathParameters = req.params;
@@ -80,16 +80,13 @@ app.get('/products/:org_id', function (req, res) {
     done: function (rescode, resmsg) {
       res.header(resmsg.headers);
       res.status(resmsg.statusCode);
-      res.send(resmsg.body)
-    }
-  })
-})
+      res.send(resmsg.body);
+    },
+  });
+});
 
-
-
-
-app.get('/branchproducts/:branch_id', function (req, res) {
-  var event = {stageVariables: {'env': 'dev'}};
+app.get("/branchproducts/:branch_id", function (req, res) {
+  var event = { stageVariables: { env: "dev" } };
   var productAction = new ProductAction();
   event.headers = req.headers;
   event.pathParameters = req.params;
@@ -98,15 +95,13 @@ app.get('/branchproducts/:branch_id', function (req, res) {
     done: function (rescode, resmsg) {
       res.header(resmsg.headers);
       res.status(resmsg.statusCode);
-      res.send(resmsg.body)
-    }
-  })
-})
+      res.send(resmsg.body);
+    },
+  });
+});
 
-
-
-app.get('/prodsellingprice/:product_id', function (req, res) {
-  var event = {stageVariables: {'env': 'dev'}};
+app.get("/prodsellingprice/:product_id", function (req, res) {
+  var event = { stageVariables: { env: "dev" } };
   var productAction = new ProductAction();
   event.headers = req.headers;
   event.pathParameters = req.params;
@@ -115,13 +110,13 @@ app.get('/prodsellingprice/:product_id', function (req, res) {
     done: function (rescode, resmsg) {
       res.header(resmsg.headers);
       res.status(resmsg.statusCode);
-      res.send(resmsg.body)
-    }
-  })
-})
+      res.send(resmsg.body);
+    },
+  });
+});
 
-app.post('/sellingprice', function (req, res) { 
-  var event = {stageVariables: {'env': 'dev'}};
+app.post("/sellingprice", function (req, res) {
+  var event = { stageVariables: { env: "dev" } };
   var productAction = new ProductAction();
   event.headers = req.headers;
   event.body = req.body;
@@ -132,13 +127,13 @@ app.post('/sellingprice', function (req, res) {
     done: function (rescode, resmsg) {
       res.header(resmsg.headers);
       res.status(resmsg.statusCode);
-      res.send(resmsg.body)
-    }
-  })
-})
+      res.send(resmsg.body);
+    },
+  });
+});
 
-app.get('/references/:ref_type', function (req, res){
-  var event = {stageVariables: {'env': 'dev'}};
+app.get("/references/:ref_type", function (req, res) {
+  var event = { stageVariables: { env: "dev" } };
   var masterAction = new MasterAction();
   event.header = req.headers;
   event.pathParameters = req.params;
@@ -147,13 +142,13 @@ app.get('/references/:ref_type', function (req, res){
     done: function (rescode, resmsg) {
       res.header(resmsg.headers);
       res.status(resmsg.statusCode);
-      res.send(resmsg.body)
-    }
-  })  
-})
+      res.send(resmsg.body);
+    },
+  });
+});
 
-app.get('/business/:org_id', function (req, res) {
-  var event = {stageVariables: {'env': 'dev'}};
+app.get("/business/:org_id", function (req, res) {
+  var event = { stageVariables: { env: "dev" } };
   var businessAction = new BusinessAction();
   event.headers = req.headers;
   event.pathParameters = req.params;
@@ -162,13 +157,13 @@ app.get('/business/:org_id', function (req, res) {
     done: function (rescode, resmsg) {
       res.header(resmsg.headers);
       res.status(resmsg.statusCode);
-      res.send(resmsg.body)
-    }
-  })
-})
+      res.send(resmsg.body);
+    },
+  });
+});
 
-app.get('/business/:org_id/:bu_id', function (req, res) {
-  var event = {stageVariables: {'env': 'dev'}};
+app.get("/business/:org_id/:bu_id", function (req, res) {
+  var event = { stageVariables: { env: "dev" } };
   var businessAction = new BusinessAction();
   event.headers = req.headers;
   event.pathParameters = req.params;
@@ -177,13 +172,13 @@ app.get('/business/:org_id/:bu_id', function (req, res) {
     done: function (rescode, resmsg) {
       res.header(resmsg.headers);
       res.status(resmsg.statusCode);
-      res.send(resmsg.body)
-    }
-  })
-})
+      res.send(resmsg.body);
+    },
+  });
+});
 
-app.get('/category', function (req, res) {
-  var event = {stageVariables: {'env': 'dev'}};
+app.get("/category", function (req, res) {
+  var event = { stageVariables: { env: "dev" } };
   var productAction = new ProductAction();
   event.headers = req.headers;
   event.pathParameters = req.params;
@@ -192,13 +187,13 @@ app.get('/category', function (req, res) {
     done: function (rescode, resmsg) {
       res.header(resmsg.headers);
       res.status(resmsg.statusCode);
-      res.send(resmsg.body)
-    }
-  })
-})
+      res.send(resmsg.body);
+    },
+  });
+});
 
-app.post('/indent', function (req, res) {
-  var event = {stageVariables: {'env': 'dev'}};
+app.post("/indent", function (req, res) {
+  var event = { stageVariables: { env: "dev" } };
   var indentAction = new IndentAction();
   event.headers = req.headers;
   event.body = req.body;
@@ -207,12 +202,12 @@ app.post('/indent', function (req, res) {
     done: function (rescode, resmsg) {
       res.header(resmsg.headers);
       res.status(resmsg.statusCode);
-      res.send(resmsg.body)
-    }
-  })
-})
-app.get('/indents/:org_id', function (req, res){
-  var event = {stageVariables: {'env': 'dev'}};
+      res.send(resmsg.body);
+    },
+  });
+});
+app.get("/indents/:org_id", function (req, res) {
+  var event = { stageVariables: { env: "dev" } };
   var indentAction = new IndentAction();
   event.headers = req.headers;
   event.body = req.body;
@@ -222,29 +217,29 @@ app.get('/indents/:org_id', function (req, res){
     done: function (rescode, resmsg) {
       res.header(resmsg.headers);
       res.status(resmsg.statusCode);
-      res.send(resmsg.body)
-    }
-  })  
-})
+      res.send(resmsg.body);
+    },
+  });
+});
 
-app.get('/indentdetail/:org_id', function (req, res){
-  var event = {stageVariables: {'env': 'dev'}};
+app.get("/indentdetail/:org_id", function (req, res) {
+  var event = { stageVariables: { env: "dev" } };
   var indentAction = new IndentAction();
   event.headers = req.headers;
- // event.body = req.body;
+  // event.body = req.body;
   event.pathParameters = req.params;
   event.queryParameters = aqp(req.query);
   indentAction.GetIndentDetail(event, {
     done: function (rescode, resmsg) {
       res.header(resmsg.headers);
       res.status(resmsg.statusCode);
-      res.send(resmsg.body)
-    }
-  })  
-})
+      res.send(resmsg.body);
+    },
+  });
+});
 
-app.get('/production-monitoring/:org_id', function (req, res) {
-  var event = {stageVariables: {'env': 'dev'}};
+app.get("/production-monitoring/:org_id", function (req, res) {
+  var event = { stageVariables: { env: "dev" } };
   var productionAction = new ProductionAction();
   event.headers = req.headers;
   event.pathParameters = req.params;
@@ -253,13 +248,13 @@ app.get('/production-monitoring/:org_id', function (req, res) {
     done: function (rescode, resmsg) {
       res.header(resmsg.headers);
       res.status(resmsg.statusCode);
-      res.send(resmsg.body)
-    }
-  })
-})
+      res.send(resmsg.body);
+    },
+  });
+});
 
-app.post('/production-monitoring', function (req, res) { 
-  var event = {stageVariables: {'env': 'dev'}};
+app.post("/production-monitoring", function (req, res) {
+  var event = { stageVariables: { env: "dev" } };
   var productionAction = new ProductionAction();
   event.headers = req.headers;
   event.body = req.body;
@@ -270,13 +265,13 @@ app.post('/production-monitoring', function (req, res) {
     done: function (rescode, resmsg) {
       res.header(resmsg.headers);
       res.status(resmsg.statusCode);
-      res.send(resmsg.body)
-    }
-  })
-})
+      res.send(resmsg.body);
+    },
+  });
+});
 
-app.get('/employees/:org_id', function (req, res) {
-  var event = {stageVariables: {'env': 'dev'}};
+app.get("/employees/:org_id", function (req, res) {
+  var event = { stageVariables: { env: "dev" } };
   var productionAction = new ProductionAction();
   event.headers = req.headers;
   event.pathParameters = req.params;
@@ -285,14 +280,13 @@ app.get('/employees/:org_id', function (req, res) {
     done: function (rescode, resmsg) {
       res.header(resmsg.headers);
       res.status(resmsg.statusCode);
-      res.send(resmsg.body)
-    }
-  })
-})
+      res.send(resmsg.body);
+    },
+  });
+});
 
-
-app.get('/product-dashboard/:org_id', function (req, res) {
-  var event = {stageVariables: {'env': 'dev'}};
+app.get("/product-dashboard/:org_id", function (req, res) {
+  var event = { stageVariables: { env: "dev" } };
   var dashboardAction = new DashboardAction();
   event.headers = req.headers;
   event.pathParameters = req.params;
@@ -301,13 +295,13 @@ app.get('/product-dashboard/:org_id', function (req, res) {
     done: function (rescode, resmsg) {
       res.header(resmsg.headers);
       res.status(resmsg.statusCode);
-      res.send(resmsg.body)
-    }
-  })
-})
+      res.send(resmsg.body);
+    },
+  });
+});
 
-app.get('/production-report/:org_id', function (req, res) {
-  var event = {stageVariables: {'env': 'dev'}};
+app.get("/production-report/:org_id", function (req, res) {
+  var event = { stageVariables: { env: "dev" } };
   var dashboardAction = new DashboardAction();
   event.headers = req.headers;
   event.pathParameters = req.params;
@@ -316,11 +310,40 @@ app.get('/production-report/:org_id', function (req, res) {
     done: function (rescode, resmsg) {
       res.header(resmsg.headers);
       res.status(resmsg.statusCode);
-      res.send(resmsg.body)
-    }
-  })
-})
+      res.send(resmsg.body);
+    },
+  });
+});
 
+app.get("/timesheet/:org_id", function (req, res) {
+  var event = { stageVariables: { env: "dev" } };
+  var timesheetAction = new TimesheetAction();
+  event.headers = req.headers;
+  event.pathParameters = req.params;
+  event.queryParameters = aqp(req.query);
+  timesheetAction.GetTimesheets(event, {
+    done: function (rescode, resmsg) {
+      res.header(resmsg.headers);
+      res.status(resmsg.statusCode);
+      res.send(resmsg.body);
+    },
+  });
+});
 
+app.post("/timesheet", function (req, res) {
+  var event = { stageVariables: { env: "dev" } };
+  var timesheetAction = new TimesheetAction();
+  event.headers = req.headers;
+  event.body = req.body;
+  event.pathParameters = req.params;
+  event.queryParameters = aqp(req.query);  
+  timesheetAction.CreateTimesheet(event, {
+    done: function (rescode, resmsg) {
+      res.header(resmsg.headers);
+      res.status(resmsg.statusCode);
+      res.send(resmsg.body);
+    },
+  });
+});
 
 module.exports = app;
