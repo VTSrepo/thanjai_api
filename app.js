@@ -338,6 +338,89 @@ app.get('/branches/:org_id', function (req, res) {
   })
 })
 
+app.get('/users/:org_id', function (req, res) {
+  var event = { stageVariables: { 'env': 'dev' } };
+  var userAction = new UserAction();
+  event.headers = req.headers;
+  event.pathParameters = req.params;
+  event.queryParameters = aqp(req.query);
+  userAction.GetUserList(event, {
+    done: function (rescode, resmsg) {
+      res.header(resmsg.headers);
+      res.status(resmsg.statusCode);
+      res.send(resmsg.body)
+    }
+  })
+})
+
+
+app.post('/createuser', function (req, res) {
+  var event = { stageVariables: { 'env': 'dev' } };
+  var userAction = new UserAction();
+  event.headers = req.headers;
+  event.body = req.body;
+  event.pathParameters = req.params;
+  event.queryParameters = aqp(req.query);
+  console.log("Create User");
+  userAction.CreateUser(event, {
+    done: function (rescode, resmsg) {
+      res.header(resmsg.headers);
+      res.status(resmsg.statusCode);
+      res.send(resmsg.body)
+    }
+  })
+})
+
+app.post('/updateuser', function (req, res) {
+  var event = { stageVariables: { 'env': 'dev' } };
+  var userAction = new UserAction();
+  event.headers = req.headers;
+  event.body = req.body;
+  event.pathParameters = req.params;
+  event.queryParameters = aqp(req.query);
+  console.log("Update User");
+  userAction.UpdateUser(event, {
+    done: function (rescode, resmsg) {
+      res.header(resmsg.headers);
+      res.status(resmsg.statusCode);
+      res.send(resmsg.body)
+    }
+  })
+})
+
+
+app.get('/categories', function (req, res) {
+  var event = { stageVariables: { 'env': 'dev' } };
+  var masterAction = new MasterAction();
+  event.headers = req.headers;
+  event.pathParameters = req.params;
+  event.queryParameters = aqp(req.query);
+  masterAction.GetCategoryList(event, {
+    done: function (rescode, resmsg) {
+      res.header(resmsg.headers);
+      res.status(resmsg.statusCode);
+      res.send(resmsg.body)
+    }
+  })
+})
+
+
+app.post('/category', function (req, res) {
+  var event = { stageVariables: { 'env': 'dev' } };
+  var masterAction = new MasterAction();
+  event.headers = req.headers;
+  event.body = req.body;
+  event.pathParameters = req.params;
+  event.queryParameters = aqp(req.query);
+  console.log("Create Category");
+  masterAction.CreateCategory(event, {
+    done: function (rescode, resmsg) {
+      res.header(resmsg.headers);
+      res.status(resmsg.statusCode);
+      res.send(resmsg.body)
+    }
+  })
+})
 
 
 module.exports = app;
