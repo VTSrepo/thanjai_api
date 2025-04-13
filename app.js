@@ -14,6 +14,7 @@ const { MasterAction } = require('./lib/action/master_action');
 const { BusinessAction } = require('./lib/action/business_action');
 const { IndentAction } = require('./lib/action/indent_action');
 const { ProductionAction } = require('./lib/action/production_action');
+const { DashboardAction } = require('./lib/action/dashboard_action');
 const path = require('path');
 // Serve static files from the React app build folder under /v1
 app.use('/', express.static(path.join(__dirname, 'client', 'build')));
@@ -289,6 +290,137 @@ app.get('/employees/:org_id', function (req, res) {
   })
 })
 
+
+app.get('/product-dashboard/:org_id', function (req, res) {
+  var event = {stageVariables: {'env': 'dev'}};
+  var dashboardAction = new DashboardAction();
+  event.headers = req.headers;
+  event.pathParameters = req.params;
+  event.queryParameters = aqp(req.query);
+  dashboardAction.GetProductDashboard(event, {
+    done: function (rescode, resmsg) {
+      res.header(resmsg.headers);
+      res.status(resmsg.statusCode);
+      res.send(resmsg.body)
+    }
+  })
+})
+
+app.post('/employee', function (req, res) {
+  var event = { stageVariables: { 'env': 'dev' } };
+  var productionAction = new ProductionAction();
+  event.headers = req.headers;
+  event.body = req.body;
+  event.pathParameters = req.params;
+  event.queryParameters = aqp(req.query);
+  console.log("Create Emp Product");
+  productionAction.CreateEmployee(event, {
+    done: function (rescode, resmsg) {
+      res.header(resmsg.headers);
+      res.status(resmsg.statusCode);
+      res.send(resmsg.body)
+    }
+  })
+})
+
+app.get('/branches/:org_id', function (req, res) {
+  var event = { stageVariables: { 'env': 'dev' } };
+  var masterAction = new MasterAction();
+  event.headers = req.headers;
+  event.pathParameters = req.params;
+  event.queryParameters = aqp(req.query);
+  masterAction.GetBranchList(event, {
+    done: function (rescode, resmsg) {
+      res.header(resmsg.headers);
+      res.status(resmsg.statusCode);
+      res.send(resmsg.body)
+    }
+  })
+})
+
+app.get('/users/:org_id', function (req, res) {
+  var event = { stageVariables: { 'env': 'dev' } };
+  var userAction = new UserAction();
+  event.headers = req.headers;
+  event.pathParameters = req.params;
+  event.queryParameters = aqp(req.query);
+  userAction.GetUserList(event, {
+    done: function (rescode, resmsg) {
+      res.header(resmsg.headers);
+      res.status(resmsg.statusCode);
+      res.send(resmsg.body)
+    }
+  })
+})
+
+
+app.post('/createuser', function (req, res) {
+  var event = { stageVariables: { 'env': 'dev' } };
+  var userAction = new UserAction();
+  event.headers = req.headers;
+  event.body = req.body;
+  event.pathParameters = req.params;
+  event.queryParameters = aqp(req.query);
+  console.log("Create User");
+  userAction.CreateUser(event, {
+    done: function (rescode, resmsg) {
+      res.header(resmsg.headers);
+      res.status(resmsg.statusCode);
+      res.send(resmsg.body)
+    }
+  })
+})
+
+app.post('/updateuser', function (req, res) {
+  var event = { stageVariables: { 'env': 'dev' } };
+  var userAction = new UserAction();
+  event.headers = req.headers;
+  event.body = req.body;
+  event.pathParameters = req.params;
+  event.queryParameters = aqp(req.query);
+  console.log("Update User");
+  userAction.UpdateUser(event, {
+    done: function (rescode, resmsg) {
+      res.header(resmsg.headers);
+      res.status(resmsg.statusCode);
+      res.send(resmsg.body)
+    }
+  })
+})
+
+
+app.get('/categories', function (req, res) {
+  var event = { stageVariables: { 'env': 'dev' } };
+  var masterAction = new MasterAction();
+  event.headers = req.headers;
+  event.pathParameters = req.params;
+  event.queryParameters = aqp(req.query);
+  masterAction.GetCategoryList(event, {
+    done: function (rescode, resmsg) {
+      res.header(resmsg.headers);
+      res.status(resmsg.statusCode);
+      res.send(resmsg.body)
+    }
+  })
+})
+
+
+app.post('/category', function (req, res) {
+  var event = { stageVariables: { 'env': 'dev' } };
+  var masterAction = new MasterAction();
+  event.headers = req.headers;
+  event.body = req.body;
+  event.pathParameters = req.params;
+  event.queryParameters = aqp(req.query);
+  console.log("Create Category");
+  masterAction.CreateCategory(event, {
+    done: function (rescode, resmsg) {
+      res.header(resmsg.headers);
+      res.status(resmsg.statusCode);
+      res.send(resmsg.body)
+    }
+  })
+})
 
 
 module.exports = app;
