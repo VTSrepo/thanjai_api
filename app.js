@@ -21,9 +21,7 @@ const path = require("path");
 app.use("/", express.static(path.join(__dirname, "client", "build")));
 
 // Catch-all route to serve index.html for all routes under /v1 (for client-side routing)
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "client", "build", "index.html"));
-});
+
 
 app.post("/login", function (req, res) {
   var event = { stageVariables: { env: "dev" } };
@@ -461,4 +459,8 @@ app.post('/category', function (req, res) {
     }
   })
 })
+
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, "client", "build", "index.html"));
+});
 module.exports = app;
