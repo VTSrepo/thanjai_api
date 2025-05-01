@@ -236,6 +236,22 @@ app.get("/indentdetail/:org_id", function (req, res) {
   });
 });
 
+app.get("/indent-report/:org_id", function (req, res) {
+  var event = { stageVariables: { env: "dev" } };
+  var indentAction = new IndentAction();
+  console.log("Indent-report");
+  event.headers = req.headers;
+  event.pathParameters = req.params;
+  event.queryParameters = aqp(req.query);
+  indentAction.GetIndentReport(event, {
+    done: function (rescode, resmsg) {
+      res.header(resmsg.headers);
+      res.status(resmsg.statusCode);
+      res.send(resmsg.body);
+    },
+  });
+});
+
 app.get("/production-monitoring/:org_id", function (req, res) {
   var event = { stageVariables: { env: "dev" } };
   var productionAction = new ProductionAction();
