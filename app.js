@@ -476,6 +476,42 @@ app.post('/category', function (req, res) {
   })
 })
 
+app.post('/run-sql', async (req, res) => {
+  try {
+    // // 1. Call Python API to get SQL query
+    // const prompt = req.body.prompt;
+    // const response = await axios.post('http://localhost:8000/generate-sql', { prompt });
+    // const sqlQuery = extractSQL(response.data.response);
+    const sqlQuery = extractSQL(" and before 2026-01-01.\n```\n```sql\nSELECT *\nFROM prod_production_data\nWHERE prod_production_data.date > '2026-01-01' AND prod_production_data.date < '2025-04-01';\n```\n```\nThis query selects all columns (`*`) from the `prod_production_data` table where the `date` column is greater than `'2026-01-01'` and less than `'2025-04-01'`. This will return all rows in the table where the `date` falls within the specified date range.");
+    console.log(sqlQuery)
+    if (!sqlQuery) {
+      return res.status(400).json({ error: 'No valid SQL query found in response' });
+    }
+
+    // // 2. Execute SQL query on your MySQL DB
+    // const connection = await mysql.createConnection(dbConfig);
+    // const [rows] = await connection.execute(sqlQuery);
+    // await connection.end();
+
+    // // 3. Return query results back to frontend
+    // res.json({ results: rows });
+    res.json({})
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Helper to extract SQL query from response string
+function extractSQL(responseText) {
+  const regex = /```sql([\s\S]*?)```/i;
+  const match = responseText.match(regex);
+  if (match) {
+    return match[1].trim();
+  }
+  return null;
+}
+
 app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "client", "build", "index.html"));
 });
