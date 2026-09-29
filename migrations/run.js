@@ -77,15 +77,6 @@ const MIGRATIONS = [
     ],
   },
   {
-    id: "004_user_audit_columns",
-    table: "user_master",
-    columns: [],
-    sql: [
-      // some databases have short created_by/updated_by columns; user IDs are e-mail addresses (up to 50+)
-      `ALTER TABLE user_master MODIFY created_by VARCHAR(100) NULL, MODIFY updated_by VARCHAR(100) NULL`,
-    ],
-  },
-  {
     id: "003_credit_terms_branch",
     table: "branch_master",
     columns: [
@@ -152,6 +143,27 @@ const MIGRATIONS = [
     for (const stmt of m.sql || []) await conn.query(stmt); // CREATE TABLE IF NOT EXISTS - idempotent
     console.log(`${m.id}: ${missing.length ? "added " + missing.map((c) => c[0]).join(", ") : "columns already present"}${m.sql ? ", tables checked" : ""}`);
   }
+  // 004: audit columns (created_by / updated_by / voided_by ...) hold user IDs = e-mail addresses.
+  // Widen any that are shorter than 100 characters, in every table.
+  const [narrow] = await conn.query(
+    `SELECT TABLE_NAME, COLUMN_NAME, CHARACTER_MAXIMUM_LENGTH AS len, IS_NULLABLE FROM information_schema.COLUMNS
+      WHERE TABLE_SCHEMA = ? AND COLUMN_NAME LIKE '%\\_by' AND DATA_TYPE = 'varchar' AND CHARACTER_MAXIMUM_LENGTH < 100`,
+    [database]
+  );
+  for (const c of narrow) {
+    await conn.query(`ALTER TABLE \`${c.TABLE_NAME}\` MODIFY \`${c.COLUMN_NAME}\` VARCHAR(100) ${c.IS_NULLABLE === "YES" ? "NULL" : "NOT NULL"}`);
+  }
+  console.log(`004_audit_columns: ${narrow.length ? "widened " + narrow.map((c) => `${c.TABLE_NAME}.${c.COLUMN_NAME} (${c.len})`).join(", ") : "all OK"}`);
+
+  // 005: prod_selling_price_master had UNIQUE(updated_by) - one price row per person, so saving a
+  // second product's price failed. Drop it.
+  const [idx] = await conn.query(
+    `SELECT 1 FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'prod_selling_price_master' AND INDEX_NAME = 'updated_by_UNIQUE'`,
+    [database]
+  );
+  if (idx.length) await conn.query("ALTER TABLE prod_selling_price_master DROP INDEX updated_by_UNIQUE");
+  console.log(`005_selling_price_index: ${idx.length ? "dropped UNIQUE(updated_by)" : "OK"}`);
+
   await conn.end();
 })().catch((e) => {
   console.error("Migration failed:", e.message);
