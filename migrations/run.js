@@ -17,6 +17,54 @@ const MIGRATIONS = [
       ["qst_rate", "DECIMAL(6,3) NULL AFTER gst_hst_rate"],
     ],
   },
+  {
+    id: "002_invoicing",
+    table: "branch_master",
+    columns: [
+      ["invoice_notes", "VARCHAR(500) NULL AFTER qst_rate"], // printed under "Notes" on invoices this branch issues
+    ],
+    sql: [
+      `CREATE TABLE IF NOT EXISTS invoice_header (
+        org_id VARCHAR(5) NOT NULL,
+        invoice_number VARCHAR(20) NOT NULL,
+        indent_number VARCHAR(15) NOT NULL,
+        branch_id VARCHAR(12) NOT NULL,
+        kitchen_id VARCHAR(15) NOT NULL,
+        invoice_date DATE NOT NULL,
+        due_date DATE NULL,
+        terms VARCHAR(50) NULL,
+        sub_total DECIMAL(12,2) NOT NULL DEFAULT 0,
+        gst_label VARCHAR(10) NULL,
+        gst_rate DECIMAL(6,3) NULL,
+        gst_amount DECIMAL(12,2) NOT NULL DEFAULT 0,
+        qst_rate DECIMAL(6,3) NULL,
+        qst_amount DECIMAL(12,2) NOT NULL DEFAULT 0,
+        total_amount DECIMAL(12,2) NOT NULL DEFAULT 0,
+        balance_due DECIMAL(12,2) NOT NULL DEFAULT 0,
+        seller_info TEXT NULL,
+        bill_to_info TEXT NULL,
+        notes VARCHAR(500) NULL,
+        status VARCHAR(1) NOT NULL DEFAULT 'O',
+        created_by VARCHAR(50) NULL,
+        created_date DATETIME NULL,
+        PRIMARY KEY (org_id, invoice_number),
+        UNIQUE KEY uq_invoice_indent (org_id, indent_number, kitchen_id),
+        KEY ix_invoice_branch_date (org_id, branch_id, invoice_date)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+      `CREATE TABLE IF NOT EXISTS invoice_detail (
+        org_id VARCHAR(5) NOT NULL,
+        invoice_number VARCHAR(20) NOT NULL,
+        line_no INT NOT NULL,
+        item_code VARCHAR(15) NOT NULL,
+        item_name VARCHAR(500) NULL,
+        uom VARCHAR(100) NULL,
+        qty DECIMAL(12,3) NOT NULL DEFAULT 0,
+        rate DECIMAL(12,4) NOT NULL DEFAULT 0,
+        amount DECIMAL(12,2) NOT NULL DEFAULT 0,
+        PRIMARY KEY (org_id, invoice_number, line_no)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+    ],
+  },
 ];
 
 (async () => {
@@ -40,7 +88,8 @@ const MIGRATIONS = [
     for (const [col, def] of missing) {
       await conn.query(`ALTER TABLE \`${m.table}\` ADD COLUMN \`${col}\` ${def}`);
     }
-    console.log(`${m.id}: ${missing.length ? "added " + missing.map((c) => c[0]).join(", ") : "already applied"}`);
+    for (const stmt of m.sql || []) await conn.query(stmt); // CREATE TABLE IF NOT EXISTS - idempotent
+    console.log(`${m.id}: ${missing.length ? "added " + missing.map((c) => c[0]).join(", ") : "columns already present"}${m.sql ? ", tables checked" : ""}`);
   }
   await conn.end();
 })().catch((e) => {

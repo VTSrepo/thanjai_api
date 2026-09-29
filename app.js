@@ -503,6 +503,40 @@ app.post("/branch", async function (req, res) {
   }
 });
 
+// ---- Indent invoicing ----
+const { InvoiceModule } = require("./lib/modules/invoice_module");
+const invoiceModule = new InvoiceModule();
+const invoiceError = (res, err) => {
+  console.error("Invoice error:", err && err.message);
+  sendJson(res, { status: 500, code: 5001, message: "Sorry, Internal Server Error!." });
+};
+
+// Report: indents by indent date range (+ optional ordering branch) with invoice / estimated amounts
+app.get("/invoices/:org_id", async function (req, res) {
+  const { from_date, to_date, branch_id } = req.query;
+  const isDate = (d) => /^\d{4}-\d{2}-\d{2}$/.test(d || "");
+  if (!isDate(from_date) || !isDate(to_date)) {
+    return sendJson(res, { status: 400, code: 4000, message: "from_date and to_date (YYYY-MM-DD) are required" });
+  }
+  try {
+    sendJson(res, await invoiceModule.listIndents(req.params.org_id, { from_date, to_date, branch_id: branch_id || null }));
+  } catch (err) { invoiceError(res, err); }
+});
+
+app.get("/invoice/:org_id/:invoice_number", async function (req, res) {
+  try {
+    sendJson(res, await invoiceModule.getInvoice(req.params.org_id, req.params.invoice_number));
+  } catch (err) { invoiceError(res, err); }
+});
+
+// Creates the invoice for a received indent (returns the existing one if already generated)
+app.post("/invoice/generate", async function (req, res) {
+  const { org_id, indent_number, user_id } = req.body || {};
+  try {
+    sendJson(res, await invoiceModule.generate(org_id, indent_number, user_id));
+  } catch (err) { invoiceError(res, err); }
+});
+
 app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "client", "build", "index.html"));
 });
