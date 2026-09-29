@@ -65,6 +65,58 @@ const MIGRATIONS = [
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
     ],
   },
+  {
+    id: "003_security_users",
+    table: "user_master",
+    columns: [
+      ["pwd_reset_required", "VARCHAR(1) NULL DEFAULT 'N' AFTER pwd"], // Y after an admin reset: must change at next login
+    ],
+    sql: [
+      // room for bcrypt hashes (60 chars); existing plain passwords are hashed on each user's next login
+      `ALTER TABLE user_master MODIFY pwd VARCHAR(100) NULL`,
+    ],
+  },
+  {
+    id: "003_credit_terms_branch",
+    table: "branch_master",
+    columns: [
+      ["credit_term", "VARCHAR(3) NULL AFTER invoice_notes"], // POI = on invoice, EOM = end of month, N30 = net 30
+    ],
+  },
+  {
+    id: "003_invoice_payments",
+    table: "invoice_header",
+    columns: [
+      ["credit_term", "VARCHAR(3) NULL AFTER terms"],
+      ["amount_paid", "DECIMAL(12,2) NOT NULL DEFAULT 0 AFTER total_amount"],
+      ["paid_date", "DATE NULL AFTER balance_due"],
+    ],
+    sql: [
+      `CREATE TABLE IF NOT EXISTS invoice_payment (
+        payment_id INT NOT NULL AUTO_INCREMENT,
+        org_id VARCHAR(5) NOT NULL,
+        receipt_no VARCHAR(20) NOT NULL,
+        invoice_number VARCHAR(20) NOT NULL,
+        branch_id VARCHAR(12) NOT NULL,
+        payment_date DATE NOT NULL,
+        amount DECIMAL(12,2) NOT NULL,
+        mode VARCHAR(20) NOT NULL,
+        reference VARCHAR(100) NULL,
+        note VARCHAR(500) NULL,
+        voided VARCHAR(1) NOT NULL DEFAULT 'N',
+        void_reason VARCHAR(500) NULL,
+        voided_by VARCHAR(50) NULL,
+        voided_date DATETIME NULL,
+        created_by VARCHAR(50) NULL,
+        created_date DATETIME NULL,
+        PRIMARY KEY (payment_id),
+        KEY ix_payment_invoice (org_id, invoice_number),
+        KEY ix_payment_receipt (org_id, receipt_no)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+      // invoices generated before payment tracking: default term = end of month (as on the Zoho invoices)
+      `UPDATE invoice_header SET credit_term = 'EOM' WHERE credit_term IS NULL`,
+    ],
+  },
 ];
 
 (async () => {

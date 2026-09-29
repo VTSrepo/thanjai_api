@@ -10,7 +10,7 @@ const read_config = {
   charset: 'utf8',
   multipleStatements: true,
   connectTimeout: 15000,
-  acquireTimeout: 10000,
+  timezone: 'Z',
   debug: false
 }
 
@@ -23,7 +23,7 @@ const write_config = {
   charset: 'utf8',
   multipleStatements: true,
   connectTimeout: 15000,
-  acquireTimeout: 10000,
+  timezone: 'Z',
   debug: false
 }
 
@@ -77,20 +77,13 @@ const writeConnection = () => {
           })
         });
       };
-      const commit = () => {
-        return new Promise((resolve, reject) => {
-          if (err) reject(err);
-          console.log("MySQL commit: threadId " + _write_connection.threadId);
-          resolve(_write_connection.commit());
-        });
-      };
-      const rollback = () => {
-        return new Promise((resolve, reject) => {
-          if (err) reject(err);
-          console.log("MySQL rollback: threadId " + _write_connection.threadId);
-          resolve(_write_connection.rollback());
-        });
-      };
+      // wait for the server to confirm (the old version resolved immediately with a non-promise)
+      const commit = () => new Promise((resolve, reject) => {
+        _write_connection.commit((e) => (e ? reject(e) : resolve()));
+      });
+      const rollback = () => new Promise((resolve) => {
+        _write_connection.rollback(() => resolve());
+      });
       resolve({
         query,
         release,
