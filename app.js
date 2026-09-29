@@ -476,6 +476,33 @@ app.post('/category', function (req, res) {
   })
 })
 
+// ---- Branch Master (admin) ----
+const { BranchModule } = require("./lib/modules/branch_module");
+const branchModule = new BranchModule();
+const sendJson = (res, result) => {
+  const code = result && result.status ? (result.status === 404 ? 404 : result.status) : 200;
+  res.status(code).json(result);
+};
+
+app.get("/branch/:org_id/:branch_id", async function (req, res) {
+  try {
+    sendJson(res, await branchModule.getBranch(req.params.org_id, req.params.branch_id));
+  } catch (err) {
+    console.error("Get branch failed:", err.message);
+    sendJson(res, { status: 500, code: 5001, message: "Sorry, Internal Server Error!." });
+  }
+});
+
+app.post("/branch", async function (req, res) {
+  try {
+    const body = req.body || {};
+    sendJson(res, await branchModule.saveBranch(body.branch, body.user_id));
+  } catch (err) {
+    console.error("Save branch failed:", err.message);
+    sendJson(res, { status: 500, code: 5001, message: "Sorry, Internal Server Error!." });
+  }
+});
+
 app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "client", "build", "index.html"));
 });
