@@ -77,6 +77,15 @@ const MIGRATIONS = [
     ],
   },
   {
+    id: "004_user_audit_columns",
+    table: "user_master",
+    columns: [],
+    sql: [
+      // some databases have short created_by/updated_by columns; user IDs are e-mail addresses (up to 50+)
+      `ALTER TABLE user_master MODIFY created_by VARCHAR(100) NULL, MODIFY updated_by VARCHAR(100) NULL`,
+    ],
+  },
+  {
     id: "003_credit_terms_branch",
     table: "branch_master",
     columns: [
