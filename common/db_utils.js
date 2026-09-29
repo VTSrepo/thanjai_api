@@ -1,6 +1,12 @@
 const mysql = require('mysql2');
 var debug = require('debug')('v1:gateway:utils');
 
+// Always print the real database error in the API console (the client only gets a generic message).
+// Only the error code and MySQL's message are printed - never the SQL, which may hold password hashes.
+const logDbError = (err) => {
+  console.error(`[DB ERROR] ${err.code || ''} ${err.sqlMessage || err.message || err}`);
+};
+
 const read_config = {
   host: process.env.WRITE_DB_SRV_HOST,
   user: process.env.WRITE_DB_USER,
@@ -55,7 +61,10 @@ const writeConnection = () => {
       const query = (sql, binding) => {
         return new Promise((resolve, reject) => {
           _write_connection.query(sql, binding, (err, result) => {
-            if (err) reject(err);
+            if (err) {
+              logDbError(err);
+              return reject(err);
+            }
             resolve(result);
           });
         });
@@ -105,7 +114,10 @@ const readConnection = (sql, binding) => {
       const query = (sql, binding) => {
         return new Promise((resolve, reject) => {
           _read_connection.query(sql, binding, (err, result) => {
-            if (err) reject(err);
+            if (err) {
+              logDbError(err);
+              return reject(err);
+            }
             resolve(result);
           });
         });
