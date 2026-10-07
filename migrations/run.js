@@ -77,6 +77,13 @@ const MIGRATIONS = [
     ],
   },
   {
+    id: "006_indent_delivery_date",
+    table: "indent_header",
+    columns: [
+      ["delivery_date", "DATE NULL AFTER delivery_by_datetime"], // actual delivery date entered by the kitchen at dispatch
+    ],
+  },
+  {
     id: "003_credit_terms_branch",
     table: "branch_master",
     columns: [
