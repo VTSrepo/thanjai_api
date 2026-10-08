@@ -112,7 +112,10 @@ const checkIndentOwner = async (req, res, next) => {
 };
 
 // Who may move an indent to which status (BRD): C by branch/external, A & D by kitchen, R by branch/external.
+// F (invoice finalized) is set only through /invoice-setup by admin.
 const TRANSITIONS = { C: [B, X], A: [K], D: [K], R: [B, X] };
+// Required current status for each move: accept a new indent, dispatch only after admin finalized the invoice, receive after dispatch.
+const FROM_STATUS = { A: ["C"], D: ["F"], R: ["D"] };
 const checkIndentWrite = async (req, res, next) => {
   const u = req.user;
   const indent = (req.body && req.body.indent) || {};
@@ -131,6 +134,13 @@ const checkIndentWrite = async (req, res, next) => {
     const allowed = TRANSITIONS[indent.status] || [];
     if (u.user_type !== A && !allowed.includes(u.user_type)) {
       return forbidden(res, "You cannot move this indent to that status");
+    }
+    const from = FROM_STATUS[indent.status];
+    if (!from || !from.includes(existing.status)) {
+      const msg = indent.status === "D" && existing.status === "A"
+        ? "Waiting for admin to finalize the invoice before dispatch"
+        : "This indent has already moved on. Refresh and try again.";
+      return res.status(409).json({ status: 409, code: "WRONG_STATUS", message: msg });
     }
     indent.branch_id = existing.branch_id;
     indent.user_id = u.user_id;
@@ -223,6 +233,12 @@ api("post", "/invoice/generate", [A, B, X], wrap(async (req) => {
 }, "Generate invoice"));
 
 // ---- Payments & receivables -----------------------------------------------------
+// Admin invoice setup between kitchen accept (A) and dispatch: per-item tax, payment terms, extra charges.
+// Finalizing moves the indent to F; only then can the kitchen dispatch.
+api("get", "/invoice-setup/:org_id/:indent_number", [A], wrap((req) =>
+  invoiceModule.getSetup(req.user.org_id, req.params.indent_number), "Invoice setup"));
+api("post", "/invoice-setup", [A], wrap((req) => invoiceModule.saveSetup(req.user, req.body), "Save invoice setup"));
+
 const paymentModule = new PaymentModule();
 const scopedBranch = (req) => (isBranchScoped(req.user) ? req.user.branch_id : req.query.branch_id || null);
 

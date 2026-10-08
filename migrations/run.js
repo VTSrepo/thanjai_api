@@ -124,6 +124,45 @@ const MIGRATIONS = [
       `UPDATE invoice_header SET credit_term = 'EOM' WHERE credit_term IS NULL`,
     ],
   },
+  {
+    id: "007_invoice_setup",
+    table: "indent_header",
+    columns: [
+      // admin's invoice decisions, made after the kitchen accepts and before dispatch
+      ["inv_credit_term", "VARCHAR(10) NULL AFTER delivery_date"],
+      ["inv_finalized_by", "VARCHAR(100) NULL AFTER inv_credit_term"],
+      ["inv_finalized_date", "DATETIME NULL AFTER inv_finalized_by"],
+    ],
+    sql: [
+      // terms like EONM / N120 need more than 3 characters
+      `ALTER TABLE branch_master MODIFY credit_term VARCHAR(10) NULL`,
+      `ALTER TABLE invoice_header MODIFY credit_term VARCHAR(10) NULL`,
+      `CREATE TABLE IF NOT EXISTS indent_charge (
+        org_id VARCHAR(5) NOT NULL,
+        indent_number VARCHAR(15) NOT NULL,
+        kitchen_id VARCHAR(15) NOT NULL,
+        line_no INT NOT NULL,
+        description VARCHAR(200) NOT NULL,
+        amount DECIMAL(12,2) NOT NULL DEFAULT 0,
+        taxable VARCHAR(1) NOT NULL DEFAULT 'N',
+        PRIMARY KEY (org_id, indent_number, kitchen_id, line_no)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+    ],
+  },
+  {
+    id: "007_invoice_setup_items",
+    table: "indent_detail",
+    columns: [
+      ["tax_flag", "VARCHAR(1) NULL"], // Y = taxable (default), N = non-taxable
+    ],
+  },
+  {
+    id: "007_invoice_line_tax",
+    table: "invoice_detail",
+    columns: [
+      ["taxable", "VARCHAR(1) NOT NULL DEFAULT 'Y' AFTER amount"],
+    ],
+  },
 ];
 
 (async () => {
