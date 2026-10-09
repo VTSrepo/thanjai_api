@@ -17,6 +17,8 @@ const { InvoiceModule } = require("./lib/modules/invoice_module");
 const { PaymentModule } = require("./lib/modules/payment_module");
 const { AuthModule } = require("./lib/modules/auth_module");
 const { requireAuth, isBranchScoped, ROLES } = require("./common/auth");
+const { roleModule } = require("./lib/modules/role_module");
+const { batchModule } = require("./lib/modules/batch_module");
 const BaseDao = require("./lib/dao/base_dao");
 
 const app = express();
@@ -34,7 +36,7 @@ app.use(cors({
 // React build (served under /v1 by server.js)
 app.use("/", express.static(path.join(__dirname, "client", "build")));
 
-const { A, B, K, X } = { A: ROLES.ADMIN, B: ROLES.BRANCH, K: ROLES.KITCHEN, X: ROLES.EXTERNAL };
+const { A, O, B, K, X } = { A: ROLES.ADMIN, O: ROLES.OPS, B: ROLES.BRANCH, K: ROLES.KITCHEN, X: ROLES.EXTERNAL };
 const ALL = null; // any logged-in user
 
 const sendJson = (res, result) => {
@@ -111,6 +113,17 @@ const checkIndentOwner = async (req, res, next) => {
   }
 };
 
+const checkIndentOwnerParam = async (req, res, next) => {
+  if (!isBranchScoped(req.user)) return next();
+  try {
+    const ind = await findIndent(req.user.org_id, req.params.indent_number);
+    if (ind && ind.branch_id !== req.user.branch_id) return forbidden(res);
+    next();
+  } catch (err) {
+    serverError(res, err, "Indent access check");
+  }
+};
+
 // Who may move an indent to which status (BRD): C by branch/external, A & D by kitchen, R by branch/external.
 // F (invoice finalized) is set only through /invoice-setup by admin.
 const TRANSITIONS = { C: [B, X], A: [K], D: [K], R: [B, X] };
@@ -150,52 +163,90 @@ const checkIndentWrite = async (req, res, next) => {
   }
 };
 
+// Dispatch (F -> D): take stock from batches (chosen split or oldest first). Blocks when batch stock is short.
+// If the indent update then fails, the stock is put back.
+const dispatchBatches = async (req, res, next) => {
+  const indent = (req.body && req.body.indent) || {};
+  if (indent.status !== "D") return next();
+  try {
+    const existing = await findIndent(req.user.org_id, indent.indent_number);
+    const target = { indent_number: indent.indent_number, kitchen_id: existing.kitchen_id };
+    const r = await batchModule.applyDispatch(req.user, target, indent.indent_details || [], indent.batch_alloc || {});
+    if (!r.ok) return res.status(r.status).json(r);
+    delete indent.batch_alloc;
+    if (r.applied.length) {
+      const send = res.send.bind(res);
+      res.send = (body) => {
+        if (res.statusCode >= 300) {
+          batchModule.reverseDispatch(req.user, target, r.applied).finally(() => send(body));
+          return res;
+        }
+        return send(body);
+      };
+    }
+    next();
+  } catch (err) {
+    serverError(res, err, "Dispatch batches");
+  }
+};
+
 // ---- Auth -------------------------------------------------------------------
 const authModule = new AuthModule();
-app.post("/login", wrap((req) => {
+app.post("/login", wrap(async (req) => {
   const u = (req.body && req.body.user) || {};
-  return authModule.login(u.user_id, u.pwd);
+  const r = await authModule.login(u.user_id, u.pwd);
+  if (r && r.user) r.user.screens = await roleModule.permissionsFor(r.user);
+  return r;
 }, "Login"));
+// Current user's screens (the app refreshes these on start so role changes apply without re-login)
+api("get", "/me", ALL, wrap(async (req) => ({
+  status: 200, code: 200, message: "Success", user: { ...req.user, screens: await roleModule.permissionsFor(req.user) },
+}), "Me"));
+
+// ---- Role Master ---------------------------------------------------------------
+api("get", "/roles/:org_id", ["M_ROLE", "M_USER"], wrap((req) => roleModule.list(req.user.org_id), "Roles"));
+api("post", "/role", ["M_ROLE:E"], wrap((req) => roleModule.save(req.user, req.body), "Save role"));
+api("post", "/role/delete", ["M_ROLE:E"], wrap((req) => roleModule.remove(req.user, req.body.role_id), "Delete role"));
 api("post", "/change-password", ALL, wrap((req) =>
   authModule.changePassword(req.user, req.body.current_pwd, req.body.new_pwd), "Change password"));
-api("post", "/users/reset-password", [A], wrap((req) =>
+api("post", "/users/reset-password", ["M_USER:E"], wrap((req) =>
   authModule.resetPassword(req.user, req.body.user_id, req.body.temp_pwd), "Reset password"));
 
 // ---- Existing screens (legacy actions) --------------------------------------
 api("get", "/product/:product_id", ALL, runLegacy(ProductAction, "GetProductDetail"));
-api("post", "/product", [A], runLegacy(ProductAction, "CreateProduct"));
+api("post", "/product", ["M_PRODUCT:E"], runLegacy(ProductAction, "CreateProduct"));
 api("get", "/products/:org_id", ALL, runLegacy(ProductAction, "GetProductMasterOrgId"));
 api("get", "/branchproducts/:branch_id", ALL, runLegacy(ProductAction, "GetProducts"));
-api("get", "/prodsellingprice/:product_id", [A], runLegacy(ProductAction, "GetProductSellingPrice"));
-api("post", "/sellingprice", [A], runLegacy(ProductAction, "CreateProductPricing"));
+api("get", "/prodsellingprice/:product_id", ["M_PRODUCT"], runLegacy(ProductAction, "GetProductSellingPrice"));
+api("post", "/sellingprice", ["M_PRODUCT:E"], runLegacy(ProductAction, "CreateProductPricing"));
 api("get", "/references/:ref_type", ALL, runLegacy(MasterAction, "GetReferenceList"));
 api("get", "/business/:org_id", ALL, runLegacy(BusinessAction, "GetBusiness"));
 api("get", "/business/:org_id/:bu_id", ALL, runLegacy(BusinessAction, "GetBusinessDetail"));
 api("get", "/category", ALL, runLegacy(ProductAction, "GetCategoryList"));
-api("post", "/indent", [A, B, K, X], checkIndentWrite, runLegacy(IndentAction, "createIndent"));
+api("post", "/indent", [A, B, K, X], checkIndentWrite, dispatchBatches, runLegacy(IndentAction, "createIndent"));
 api("get", "/indents/:org_id", ALL, scopeIndentList, runLegacy(IndentAction, "GetIndentList"));
 api("get", "/indentdetail/:org_id", ALL, checkIndentOwner, runLegacy(IndentAction, "GetIndentDetail"));
-api("get", "/indent-report/:org_id", [A], runLegacy(IndentAction, "GetIndentReport"));
+api("get", "/indent-report/:org_id", ["R_INDENT"], runLegacy(IndentAction, "GetIndentReport"));
 api("get", "/production-monitoring/:org_id", [A, K], runLegacy(ProductionAction, "GetProductions"));
 api("post", "/production-monitoring", [A, K], runLegacy(ProductionAction, "CreateProduction"));
-api("get", "/employees/:org_id", [A, K], runLegacy(ProductionAction, "GetEmployees"));
-api("get", "/product-dashboard/:org_id", [A], runLegacy(DashboardAction, "GetProductDashboard"));
-api("post", "/employee", [A], runLegacy(ProductionAction, "CreateEmployee"));
-api("get", "/production-report/:org_id", [A], runLegacy(DashboardAction, "GetProductionReport"));
-api("get", "/timesheet/:org_id", [A, K], runLegacy(TimesheetAction, "GetTimesheets"));
-api("post", "/timesheet", [A, K], runLegacy(TimesheetAction, "CreateTimesheet"));
+api("get", "/employees/:org_id", [K, "M_EMPLOYEE", "TIMESHEET"], runLegacy(ProductionAction, "GetEmployees"));
+api("get", "/product-dashboard/:org_id", ["DASHBOARD", "R_PRODUCTION"], runLegacy(DashboardAction, "GetProductDashboard"));
+api("post", "/employee", ["M_EMPLOYEE:E"], runLegacy(ProductionAction, "CreateEmployee"));
+api("get", "/production-report/:org_id", ["R_PRODUCTION"], runLegacy(DashboardAction, "GetProductionReport"));
+api("get", "/timesheet/:org_id", [K, "TIMESHEET"], runLegacy(TimesheetAction, "GetTimesheets"));
+api("post", "/timesheet", [K, "TIMESHEET:E"], runLegacy(TimesheetAction, "CreateTimesheet"));
 api("get", "/branches/:org_id", ALL, runLegacy(MasterAction, "GetBranchList"));
-api("get", "/users/:org_id", [A], runLegacy(UserAction, "GetUserList"));
-api("post", "/createuser", [A], runLegacy(UserAction, "CreateUser"));
-api("post", "/updateuser", [A], runLegacy(UserAction, "UpdateUser"));
+api("get", "/users/:org_id", ["M_USER"], runLegacy(UserAction, "GetUserList"));
+api("post", "/createuser", ["M_USER:E"], runLegacy(UserAction, "CreateUser"));
+api("post", "/updateuser", ["M_USER:E"], runLegacy(UserAction, "UpdateUser"));
 api("get", "/categories", ALL, runLegacy(MasterAction, "GetCategoryList"));
-api("post", "/category", [A], runLegacy(MasterAction, "CreateCategory"));
+api("post", "/category", ["M_CATEGORY:E"], runLegacy(MasterAction, "CreateCategory"));
 
 // ---- Branch Master (admin) ----------------------------------------------------
 const branchModule = new BranchModule();
-api("get", "/branch/:org_id/:branch_id", [A], wrap((req) =>
+api("get", "/branch/:org_id/:branch_id", ["M_BRANCH"], wrap((req) =>
   branchModule.getBranch(req.params.org_id, req.params.branch_id), "Get branch"));
-api("post", "/branch", [A], wrap((req) =>
+api("post", "/branch", ["M_BRANCH:E"], wrap((req) =>
   branchModule.saveBranch({ ...(req.body.branch || {}), org_id: req.user.org_id }, req.user.user_id), "Save branch"));
 
 // ---- Invoicing ------------------------------------------------------------------
@@ -203,7 +254,7 @@ const invoiceModule = new InvoiceModule();
 const isDate = (d) => /^\d{4}-\d{2}-\d{2}$/.test(d || "");
 
 // Report: indents in a date range with invoice / estimated amounts (admin)
-api("get", "/invoices/:org_id", [A], wrap((req) => {
+api("get", "/invoices/:org_id", ["R_INVOICES"], wrap((req) => {
   const { from_date, to_date, branch_id } = req.query;
   if (!isDate(from_date) || !isDate(to_date)) {
     return { status: 400, code: 4000, message: "from_date and to_date (YYYY-MM-DD) are required" };
@@ -212,7 +263,7 @@ api("get", "/invoices/:org_id", [A], wrap((req) => {
 }, "Invoice list"));
 
 // One invoice: admin, or the billed branch / customer
-api("get", "/invoice/:org_id/:invoice_number", [A, B, X], wrap(async (req) => {
+api("get", "/invoice/:org_id/:invoice_number", [B, X, "R_INVOICES", "PAYMENTS", "INVOICE_SETUP", "INDENTS"], wrap(async (req) => {
   const r = await invoiceModule.getInvoice(req.params.org_id, req.params.invoice_number);
   if (r.invoice && isBranchScoped(req.user) && r.invoice.branch_id !== req.user.branch_id) {
     return { status: 403, code: "FORBIDDEN", message: "You do not have access to this invoice" };
@@ -221,7 +272,7 @@ api("get", "/invoice/:org_id/:invoice_number", [A, B, X], wrap(async (req) => {
 }, "Get invoice"));
 
 // Generate for a received indent (returns the existing one if already generated)
-api("post", "/invoice/generate", [A, B, X], wrap(async (req) => {
+api("post", "/invoice/generate", [B, X, "R_INVOICES", "PAYMENTS", "INDENTS"], wrap(async (req) => {
   const { indent_number } = req.body || {};
   if (isBranchScoped(req.user)) {
     const ind = await findIndent(req.user.org_id, indent_number);
@@ -235,15 +286,38 @@ api("post", "/invoice/generate", [A, B, X], wrap(async (req) => {
 // ---- Payments & receivables -----------------------------------------------------
 // Admin invoice setup between kitchen accept (A) and dispatch: per-item tax, payment terms, extra charges.
 // Finalizing moves the indent to F; only then can the kitchen dispatch.
-api("get", "/invoice-setup/:org_id/:indent_number", [A], wrap((req) =>
+api("get", "/invoice-setup/:org_id/:indent_number", ["INVOICE_SETUP"], wrap((req) =>
   invoiceModule.getSetup(req.user.org_id, req.params.indent_number), "Invoice setup"));
-api("post", "/invoice-setup", [A], wrap((req) => invoiceModule.saveSetup(req.user, req.body), "Save invoice setup"));
+api("post", "/invoice-setup", ["INVOICE_SETUP:E"], wrap((req) => invoiceModule.saveSetup(req.user, req.body), "Save invoice setup"));
+
+// ---- Batches, inventory, stock alerts --------------------------------------------
+const dateRange = (q) => ({ from_date: q.from_date, to_date: q.to_date });
+api("get", "/batches/:org_id", ["BATCHES", "INVENTORY", "R_BATCH"], wrap((req) => batchModule.list(req.user.org_id, req.query), "Batches"));
+api("get", "/batch-trace/:org_id/:batch_no", ["BATCHES", "R_BATCH"], wrap((req) =>
+  batchModule.trace(req.user.org_id, req.params.batch_no), "Batch trace"));
+api("post", "/batch", ["BATCHES:E"], wrap((req) => batchModule.create(req.user, req.body || {}), "Create batch"));
+api("post", "/batch/update", ["BATCHES:E"], wrap((req) => batchModule.update(req.user, req.body || {}), "Update batch"));
+api("post", "/batch/close", ["BATCHES:E"], wrap((req) => batchModule.close(req.user, req.body || {}), "Close batch"));
+api("post", "/stock-import", ["STOCK_IMPORT:E"], wrap((req) => batchModule.importOpening(req.user, (req.body || {}).rows), "Stock import"));
+api("get", "/product-settings/:org_id", ALL, wrap((req) => batchModule.productSettings(req.user.org_id), "Product settings"));
+api("post", "/product-settings", ["M_PRODUCT:E"], wrap((req) => batchModule.saveProductSettings(req.user, req.body || {}), "Save product settings"));
+// Suggested split for the dispatch screen (kitchen); qty may be overridden with ?qty=ITEM:QTY,ITEM:QTY
+api("get", "/batch-suggest/:org_id/:indent_number", [K, "INDENTS"], wrap((req) => {
+  const qty = Object.fromEntries(String(req.query.qty || "").split(",").filter(Boolean).map((p) => p.split(":")));
+  return batchModule.suggest(req.user.org_id, req.params.indent_number, qty);
+}, "Batch suggest"));
+api("get", "/indent-batches/:org_id/:indent_number", ALL, checkIndentOwnerParam, wrap((req) =>
+  batchModule.indentAllocations(req.user.org_id, req.params.indent_number), "Indent batches"));
+api("get", "/stock/:org_id", [K, "INVENTORY", "DASHBOARD"], wrap((req) => batchModule.current(req.user, req.query), "Stock"));
+api("get", "/stock-daily/:org_id", [K, "INVENTORY"], wrap((req) => batchModule.daily(req.user, req.query), "Stock daily"));
+api("get", "/stock-alerts/:org_id", [K, "INVENTORY", "DASHBOARD", "BATCHES"], wrap((req) => batchModule.alerts(req.user), "Stock alerts"));
+api("get", "/wastage/:org_id", ["R_BATCH", "INVENTORY"], wrap((req) => batchModule.wastage(req.user.org_id, dateRange(req.query)), "Wastage"));
 
 const paymentModule = new PaymentModule();
 const scopedBranch = (req) => (isBranchScoped(req.user) ? req.user.branch_id : req.query.branch_id || null);
 
 // Open / all invoices with balances (admin: any customer; branch & external: own)
-api("get", "/receivables/:org_id", [A, B, X], wrap((req) =>
+api("get", "/receivables/:org_id", [B, X, "PAYMENTS", "R_INVOICES", "DASHBOARD"], wrap((req) =>
   paymentModule.listInvoices(req.params.org_id, {
     branch_id: scopedBranch(req),
     status: req.query.status || "open",
@@ -251,10 +325,10 @@ api("get", "/receivables/:org_id", [A, B, X], wrap((req) =>
     to_date: isDate(req.query.to_date) ? req.query.to_date : null,
   }), "Receivables"));
 
-api("get", "/receivables-summary/:org_id", [A, B, X], wrap((req) =>
+api("get", "/receivables-summary/:org_id", [B, X, "PAYMENTS", "R_INVOICES", "DASHBOARD"], wrap((req) =>
   paymentModule.summary(req.params.org_id, scopedBranch(req)), "Receivables summary"));
 
-api("get", "/invoice-payments/:org_id/:invoice_number", [A, B, X], wrap(async (req) => {
+api("get", "/invoice-payments/:org_id/:invoice_number", [B, X, "PAYMENTS", "R_INVOICES"], wrap(async (req) => {
   const r = await paymentModule.payments(req.params.org_id, req.params.invoice_number);
   if (r.invoice && isBranchScoped(req.user) && r.invoice.branch_id !== req.user.branch_id) {
     return { status: 403, code: "FORBIDDEN", message: "You do not have access to this invoice" };
@@ -262,11 +336,11 @@ api("get", "/invoice-payments/:org_id/:invoice_number", [A, B, X], wrap(async (r
   return r;
 }, "Invoice payments"));
 
-api("post", "/payment", [A], wrap((req) =>
+api("post", "/payment", ["PAYMENTS:E"], wrap((req) =>
   paymentModule.record(req.user, req.body || {}), "Record payment"));
-api("post", "/payment/void", [A], wrap((req) =>
+api("post", "/payment/void", ["PAYMENTS:E"], wrap((req) =>
   paymentModule.voidPayment(req.user, req.body || {}), "Void payment"));
-api("post", "/invoice/terms", [A], wrap((req) =>
+api("post", "/invoice/terms", ["PAYMENTS:E"], wrap((req) =>
   paymentModule.changeTerms(req.user, req.body || {}), "Change invoice terms"));
 
 // ---- Single-page app: everything else serves index.html ------------------------

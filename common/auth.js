@@ -9,8 +9,9 @@ if (SECRET === DEV_SECRET && process.env.ENV === 'production') {
 }
 const TOKEN_TTL = process.env.JWT_TTL || '7d';
 
-// Roles: A admin, B branch, K kitchen, X external customer
-const ROLES = { ADMIN: 'A', BRANCH: 'B', KITCHEN: 'K', EXTERNAL: 'X' };
+// User types (data scope): A admin, O operations manager, B branch, K kitchen, X external customer.
+// Screen access comes from the user's role (Role Master); see common/screens.js.
+const ROLES = { ADMIN: 'A', OPS: 'O', BRANCH: 'B', KITCHEN: 'K', EXTERNAL: 'X' };
 
 const signToken = (u) =>
     jwt.sign(
@@ -32,8 +33,13 @@ const verifyPassword = async (plain, stored) => {
 const authError = (res, status, message) =>
     res.status(status).json({ status, code: status === 401 ? 'AUTH_REQUIRED' : 'FORBIDDEN', message });
 
-// Express middleware: requires a valid Bearer token; optional role list.
-const requireAuth = (roles) => (req, res, next) => {
+// Express middleware: requires a valid Bearer token.
+// guard (optional) is a list; the request passes if ANY entry matches:
+//   'A' / 'B' / 'K' / 'X' / 'O'  - user type
+//   'PAYMENTS'                    - role can view that screen
+//   'PAYMENTS:E'                  - role can change on that screen
+// Admin users (type A) always pass.
+const requireAuth = (roles) => async (req, res, next) => {
     const h = req.headers.authorization || '';
     const token = h.startsWith('Bearer ') ? h.slice(7) : null;
     if (!token) return authError(res, 401, 'Please log in');
@@ -42,8 +48,23 @@ const requireAuth = (roles) => (req, res, next) => {
     } catch (e) {
         return authError(res, 401, e.name === 'TokenExpiredError' ? 'Session expired - please log in again' : 'Please log in');
     }
-    if (roles && roles.length && !roles.includes(req.user.user_type)) {
-        return authError(res, 403, 'You do not have access to this');
+    if (roles && roles.length && req.user.user_type !== ROLES.ADMIN) {
+        const types = roles.filter((r) => r.length === 1);
+        const screens = roles.filter((r) => r.length > 1);
+        let allowed = types.includes(req.user.user_type);
+        if (!allowed && screens.length) {
+            try {
+                const { roleModule } = require('../lib/modules/role_module'); // lazy: avoids a load cycle
+                const perms = await roleModule.permissionsFor(req.user);
+                allowed = screens.some((g) => {
+                    const [code, lvl] = g.split(':');
+                    return perms[code] && (lvl !== 'E' || perms[code] === 'E');
+                });
+            } catch (e) {
+                return res.status(500).json({ status: 500, code: 5001, message: 'Sorry, Internal Server Error!.' });
+            }
+        }
+        if (!allowed) return authError(res, 403, 'You do not have access to this');
     }
     // org in the URL must be the user's org
     if (req.params && req.params.org_id && req.params.org_id !== req.user.org_id) {

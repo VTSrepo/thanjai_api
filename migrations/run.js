@@ -163,6 +163,109 @@ const MIGRATIONS = [
       ["taxable", "VARCHAR(1) NOT NULL DEFAULT 'Y' AFTER amount"],
     ],
   },
+  {
+    id: "008_short_codes_branch",
+    table: "branch_master",
+    columns: [
+      ["short_code", "VARCHAR(2) NULL AFTER branch_name"], // 2-letter code, first part of batch numbers
+    ],
+  },
+  {
+    id: "008_product_batch_fields",
+    table: "product_master",
+    columns: [
+      ["short_code", "VARCHAR(3) NULL AFTER product_name"],          // 2-3 letters; products with a code are batch-tracked
+      ["producing_branch_id", "VARCHAR(10) NULL AFTER short_code"],  // kitchen that makes it (batch prefix)
+      ["shelf_life_days", "INT NULL AFTER producing_branch_id"],     // best-before = manufacturing date + days
+      ["default_taxable", "VARCHAR(1) NOT NULL DEFAULT 'Y' AFTER shelf_life_days"], // default on the invoice step
+    ],
+  },
+  {
+    id: "008_user_role",
+    table: "user_master",
+    columns: [
+      ["role_id", "VARCHAR(20) NULL AFTER user_type"],
+    ],
+    sql: [
+      `CREATE TABLE IF NOT EXISTS role_master (
+        org_id VARCHAR(5) NOT NULL,
+        role_id VARCHAR(20) NOT NULL,
+        role_name VARCHAR(100) NOT NULL,
+        description VARCHAR(500) NULL,
+        scope VARCHAR(1) NOT NULL,            -- user type this role is for: A, O, K, B, X
+        is_system VARCHAR(1) NOT NULL DEFAULT 'N',
+        status VARCHAR(1) NOT NULL DEFAULT 'A',
+        created_by VARCHAR(100) NULL, created_date DATETIME NULL,
+        updated_by VARCHAR(100) NULL, updated_date DATETIME NULL,
+        PRIMARY KEY (org_id, role_id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+      `CREATE TABLE IF NOT EXISTS role_screen (
+        org_id VARCHAR(5) NOT NULL,
+        role_id VARCHAR(20) NOT NULL,
+        screen_code VARCHAR(30) NOT NULL,
+        can_edit VARCHAR(1) NOT NULL DEFAULT 'N',
+        PRIMARY KEY (org_id, role_id, screen_code)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+    ],
+  },
+  {
+    id: "008_batches",
+    table: "invoice_detail",
+    columns: [
+      ["batch_nos", "VARCHAR(500) NULL AFTER taxable"], // e.g. "TSVD1009260001 (50), TSVD1009260002 (200)"
+    ],
+    sql: [
+      `CREATE TABLE IF NOT EXISTS batch_master (
+        org_id VARCHAR(5) NOT NULL,
+        batch_no VARCHAR(30) NOT NULL,
+        product_id VARCHAR(15) NOT NULL,
+        branch_id VARCHAR(10) NOT NULL,       -- producing branch
+        mfg_date DATE NOT NULL,
+        best_before DATE NULL,
+        qty_produced DECIMAL(12,3) NOT NULL,
+        qty_remaining DECIMAL(12,3) NOT NULL,
+        uom VARCHAR(100) NULL,
+        unit_cost DECIMAL(12,2) NULL,
+        note VARCHAR(500) NULL,
+        status VARCHAR(1) NOT NULL DEFAULT 'O', -- O open, C closed
+        source VARCHAR(1) NOT NULL DEFAULT 'E', -- E entered, I opening-stock import
+        close_reason VARCHAR(30) NULL,
+        close_note VARCHAR(500) NULL,
+        closed_by VARCHAR(100) NULL, closed_date DATETIME NULL,
+        created_by VARCHAR(100) NULL, created_date DATETIME NULL,
+        updated_by VARCHAR(100) NULL, updated_date DATETIME NULL,
+        PRIMARY KEY (org_id, batch_no),
+        KEY ix_batch_product (org_id, product_id, status, mfg_date)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+      `CREATE TABLE IF NOT EXISTS stock_movement (
+        movement_id BIGINT NOT NULL AUTO_INCREMENT,
+        org_id VARCHAR(5) NOT NULL,
+        branch_id VARCHAR(10) NOT NULL,
+        product_id VARCHAR(15) NOT NULL,
+        batch_no VARCHAR(30) NULL,
+        move_date DATE NOT NULL,
+        move_type VARCHAR(10) NOT NULL,       -- PRODUCE, OPENING, DISPATCH, WRITEOFF, ADJUST, REVERSAL
+        qty DECIMAL(12,3) NOT NULL,           -- + in, - out
+        ref_no VARCHAR(30) NULL,              -- indent number for dispatches
+        note VARCHAR(500) NULL,
+        created_by VARCHAR(100) NULL, created_date DATETIME NULL,
+        PRIMARY KEY (movement_id),
+        KEY ix_move (org_id, product_id, move_date),
+        KEY ix_move_batch (org_id, batch_no)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+      `CREATE TABLE IF NOT EXISTS indent_batch_alloc (
+        org_id VARCHAR(5) NOT NULL,
+        indent_number VARCHAR(15) NOT NULL,
+        kitchen_id VARCHAR(15) NOT NULL,
+        item_code VARCHAR(15) NOT NULL,
+        batch_no VARCHAR(30) NOT NULL,
+        qty DECIMAL(12,3) NOT NULL,
+        created_by VARCHAR(100) NULL, created_date DATETIME NULL,
+        PRIMARY KEY (org_id, indent_number, kitchen_id, item_code, batch_no),
+        KEY ix_alloc_batch (org_id, batch_no)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+    ],
+  },
 ];
 
 (async () => {
@@ -209,6 +312,29 @@ const MIGRATIONS = [
   );
   if (idx.length) await conn.query("ALTER TABLE prod_selling_price_master DROP INDEX updated_by_UNIQUE");
   console.log(`005_selling_price_index: ${idx.length ? "dropped UNIQUE(updated_by)" : "OK"}`);
+
+  // 008: system roles + screens, and a role for every existing user
+  const { DEFAULT_ROLES } = require("../common/screens");
+  const [orgs] = await conn.query("SELECT DISTINCT org_id FROM user_master UNION SELECT DISTINCT org_id FROM branch_master");
+  let seeded = 0;
+  for (const { org_id } of orgs) {
+    for (const r of DEFAULT_ROLES) {
+      const [ins] = await conn.query(
+        `INSERT IGNORE INTO role_master (org_id, role_id, role_name, description, scope, is_system, status, created_by, created_date)
+         VALUES (?, ?, ?, ?, ?, 'Y', 'A', 'migration', NOW())`, [org_id, r.role_id, r.role_name, r.description, r.scope]);
+      if (ins.affectedRows) {
+        seeded++;
+        for (const [code, lvl] of Object.entries(r.screens)) {
+          await conn.query(`INSERT IGNORE INTO role_screen (org_id, role_id, screen_code, can_edit) VALUES (?, ?, ?, ?)`,
+            [org_id, r.role_id, code, lvl === "E" ? "Y" : "N"]);
+        }
+      }
+    }
+    await conn.query(
+      `UPDATE user_master SET role_id = CASE user_type WHEN 'A' THEN 'ADMIN' WHEN 'O' THEN 'OPS' WHEN 'K' THEN 'KITCHEN'
+         WHEN 'B' THEN 'BRANCH' WHEN 'X' THEN 'EXTERNAL' END WHERE org_id = ? AND role_id IS NULL`, [org_id]);
+  }
+  console.log(`008_roles: ${seeded ? "created " + seeded + " system role(s)" : "OK"}`);
 
   await conn.end();
 })().catch((e) => {
