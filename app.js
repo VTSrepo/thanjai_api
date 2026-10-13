@@ -19,6 +19,7 @@ const { AuthModule } = require("./lib/modules/auth_module");
 const { requireAuth, isBranchScoped, ROLES } = require("./common/auth");
 const { roleModule } = require("./lib/modules/role_module");
 const { batchModule } = require("./lib/modules/batch_module");
+const { productImport } = require("./lib/modules/product_import_module");
 const BaseDao = require("./lib/dao/base_dao");
 
 const app = express();
@@ -301,6 +302,8 @@ api("post", "/batch/close", ["BATCHES:E"], wrap((req) => batchModule.close(req.u
 api("post", "/stock-import", ["STOCK_IMPORT:E"], wrap((req) => batchModule.importOpening(req.user, (req.body || {}).rows), "Stock import"));
 api("get", "/product-settings/:org_id", ALL, wrap((req) => batchModule.productSettings(req.user.org_id), "Product settings"));
 api("post", "/product-settings", ["M_PRODUCT:E"], wrap((req) => batchModule.saveProductSettings(req.user, req.body || {}), "Save product settings"));
+// Product Master bulk update from Excel (preview first, then apply)
+api("post", "/product-import", ["M_PRODUCT:E"], wrap((req) => productImport.run(req.user, req.body || {}), "Product import"));
 // Suggested split for the dispatch screen (kitchen); qty may be overridden with ?qty=ITEM:QTY,ITEM:QTY
 api("get", "/batch-suggest/:org_id/:indent_number", [K, "INDENTS"], wrap((req) => {
   const qty = Object.fromEntries(String(req.query.qty || "").split(",").filter(Boolean).map((p) => p.split(":")));
