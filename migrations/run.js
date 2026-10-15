@@ -275,6 +275,7 @@ const MIGRATIONS = [
       ["sub_diet", "VARCHAR(1) NULL AFTER sub_description"],          // V veg, N non-veg, E egg
       ["sub_allergens", "VARCHAR(200) NULL AFTER sub_diet"],           // comma list: Milk, Nuts, Gluten...
       ["sub_image_url", "VARCHAR(500) NULL AFTER sub_allergens"],
+      ["sub_enabled", "VARCHAR(1) NOT NULL DEFAULT 'N' AFTER sub_image_url"], // Y = can be put on the online weekly menu
     ],
     sql: [
       `CREATE TABLE IF NOT EXISTS sub_settings (
@@ -436,6 +437,9 @@ const MIGRATIONS = [
     password: process.env.WRITE_DB_PASSWORD,
     database,
   });
+  // remembered before the loop: products already used on an online menu get sub_enabled = Y when the column is first added
+  const [[{ hadSubEnabled }]] = await conn.query(
+    "SELECT COUNT(*) AS hadSubEnabled FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'product_master' AND COLUMN_NAME = 'sub_enabled'", [database]);
   for (const m of MIGRATIONS) {
     const [rows] = await conn.query(
       "SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?",
@@ -518,6 +522,11 @@ const MIGRATIONS = [
         subSeeded += r.affectedRows;
       }
     }
+  }
+  if (!hadSubEnabled) {
+    const [r] = await conn.query(`UPDATE product_master p SET p.sub_enabled = 'Y'
+      WHERE EXISTS (SELECT 1 FROM sub_menu_item i WHERE i.org_id = p.org_id AND i.product_id = p.product_id)`);
+    subSeeded += r.affectedRows;
   }
   console.log(`009_subscriptions: ${subSeeded ? "defaults created" : "OK"}`);
 
