@@ -21,6 +21,9 @@ const SCREENS = [
   { code: 'M_CATEGORY', label: 'Category master', group: 'Masters' },
   { code: 'M_BRANCH', label: 'Branch master', group: 'Masters' },
   { code: 'M_ROLE', label: 'Role master', group: 'Masters' },
+  { code: 'SUB_ORDERS', label: 'Online orders (weekly meals)', group: 'Online subscriptions' },
+  { code: 'SUB_SETUP', label: 'Plans, weekly menu, delivery zones, shop settings', group: 'Online subscriptions' },
+  { code: 'SUB_CUSTOMERS', label: 'Subscribers', group: 'Online subscriptions' },
 ];
 const SCREEN_CODES = new Set(SCREENS.map((s) => s.code));
 
@@ -28,6 +31,7 @@ const SCREEN_CODES = new Set(SCREENS.map((s) => s.code));
 const USER_TYPES = {
   A: 'Admin', O: 'Operations Manager', K: 'Kitchen', B: 'Branch', X: 'External customer',
 };
+// Online subscribers (type S) log in to the shop, not to staff screens; they never appear in User Master.
 
 const all = (lvl) => Object.fromEntries(SCREENS.map((s) => [s.code, lvl]));
 
@@ -40,6 +44,7 @@ const DEFAULT_ROLES = [
     screens: {
       DASHBOARD: 'V', INDENTS: 'V', INVOICE_SETUP: 'E', BATCHES: 'E', INVENTORY: 'E', STOCK_IMPORT: 'E',
       PAYMENTS: 'E', R_INVOICES: 'V', R_INDENT: 'V', R_PRODUCTION: 'V', R_BATCH: 'V', M_PRODUCT: 'V',
+      SUB_ORDERS: 'E', SUB_SETUP: 'E', SUB_CUSTOMERS: 'V',
     },
   },
   {

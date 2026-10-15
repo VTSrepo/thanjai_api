@@ -20,9 +20,19 @@ const { requireAuth, isBranchScoped, ROLES } = require("./common/auth");
 const { roleModule } = require("./lib/modules/role_module");
 const { batchModule } = require("./lib/modules/batch_module");
 const { productImport } = require("./lib/modules/product_import_module");
+const { subscriptionModule } = require("./lib/modules/subscription_module");
 const BaseDao = require("./lib/dao/base_dao");
 
 const app = express();
+// Stripe webhook needs the raw body for its signature check, so it is registered before the JSON parser
+app.post("/shop/stripe/webhook", express.raw({ type: "application/json" }), async (req, res) => {
+  try {
+    res.json(await subscriptionModule.stripeWebhook(req.body, req.headers["stripe-signature"]));
+  } catch (e) {
+    console.error("Stripe webhook rejected:", e.message);
+    res.status(400).json({ message: "Webhook error" });
+  }
+});
 app.use(bodyParser.json({ limit: "10mb" }));
 app.use(bodyParser.urlencoded({ extended: false }));
 
@@ -304,6 +314,44 @@ api("get", "/product-settings/:org_id", ALL, wrap((req) => batchModule.productSe
 api("post", "/product-settings", ["M_PRODUCT:E"], wrap((req) => batchModule.saveProductSettings(req.user, req.body || {}), "Save product settings"));
 // Product Master bulk update from Excel (preview first, then apply)
 api("post", "/product-import", ["M_PRODUCT:E"], wrap((req) => productImport.run(req.user, req.body || {}), "Product import"));
+
+// ---- Online shop (weekly meal subscriptions) ---------------------------------------
+// public
+app.get("/shop/info", wrap(() => subscriptionModule.shopInfo(), "Shop info"));
+app.get("/shop/zone-check", wrap((req) => subscriptionModule.zoneCheck(req.query.postal), "Zone check"));
+app.post("/shop/signup", wrap((req) => subscriptionModule.signup(req.body || {}), "Shop signup"));
+app.post("/shop/login", wrap((req) => subscriptionModule.login(req.body || {}), "Shop login"));
+// subscriber (type S)
+const S = ROLES.SUBSCRIBER;
+api("get", "/shop/me", [S], wrap((req) => subscriptionModule.me(req.user), "Shop account"));
+api("post", "/shop/profile", [S], wrap((req) => subscriptionModule.updateProfile(req.user, req.body || {}), "Shop profile"));
+api("post", "/shop/password", [S], wrap((req) => subscriptionModule.changePassword(req.user, req.body || {}), "Shop password"));
+api("post", "/shop/start", [S], wrap((req) => subscriptionModule.start(req.user, req.body || {}), "Shop start"));
+api("get", "/shop/pay/confirm", [S], wrap((req) => subscriptionModule.confirmPayment(req.user, req.query.ref), "Shop payment confirm"));
+api("post", "/shop/meals", [S], wrap((req) => subscriptionModule.saveMeals(req.user, req.body || {}), "Shop meals"));
+api("post", "/shop/skip", [S], wrap((req) => subscriptionModule.skipWeek(req.user, req.body || {}), "Shop skip"));
+api("post", "/shop/subscription", [S], wrap((req) => subscriptionModule.manageSubscription(req.user, req.body || {}), "Shop subscription"));
+api("post", "/shop/card", [S], wrap((req) => subscriptionModule.cardSetup(req.user, req.body || {}), "Shop card"));
+api("get", "/shop/card/confirm", [S], wrap((req) => subscriptionModule.cardConfirm(req.user, req.query.ref), "Shop card confirm"));
+// staff
+api("get", "/sub/settings/:org_id", ["SUB_SETUP", "SUB_ORDERS"], wrap((req) => subscriptionModule.getSettings(req.user.org_id), "Shop settings"));
+api("post", "/sub/settings", ["SUB_SETUP:E"], wrap((req) => subscriptionModule.saveSettings(req.user, req.body || {}), "Save shop settings"));
+api("get", "/sub/plans/:org_id", ["SUB_SETUP", "SUB_CUSTOMERS"], wrap((req) => subscriptionModule.listPlans(req.user.org_id), "Plans"));
+api("post", "/sub/plan", ["SUB_SETUP:E"], wrap((req) => subscriptionModule.savePlan(req.user, req.body || {}), "Save plan"));
+api("get", "/sub/zones/:org_id", ["SUB_SETUP", "SUB_ORDERS"], wrap((req) => subscriptionModule.listZones(req.user.org_id), "Zones"));
+api("post", "/sub/zone", ["SUB_SETUP:E"], wrap((req) => subscriptionModule.saveZone(req.user, req.body || {}), "Save zone"));
+api("get", "/sub/dishes/:org_id", ["SUB_SETUP"], wrap((req) => subscriptionModule.listDishes(req.user.org_id), "Dishes"));
+api("post", "/sub/dish", ["SUB_SETUP:E"], wrap((req) => subscriptionModule.saveDish(req.user, req.body || {}), "Save dish"));
+api("get", "/sub/weeks/:org_id", ["SUB_SETUP", "SUB_ORDERS"], wrap((req) => subscriptionModule.listWeeks(req.user.org_id), "Menu weeks"));
+api("get", "/sub/week/:org_id/:date", ["SUB_SETUP", "SUB_ORDERS"], wrap((req) => subscriptionModule.getWeek(req.user.org_id, req.params.date), "Menu week"));
+api("post", "/sub/week", ["SUB_SETUP:E"], wrap((req) => subscriptionModule.saveWeek(req.user, req.body || {}), "Save menu week"));
+api("get", "/sub/orders/:org_id/:date", ["SUB_ORDERS"], wrap((req) => subscriptionModule.weekOrders(req.user.org_id, req.params.date), "Online orders"));
+api("post", "/sub/cutoff", ["SUB_ORDERS:E"], wrap((req) => subscriptionModule.runCutoff(req.user, (req.body || {}).delivery_date), "Cutoff"));
+api("post", "/sub/kitchen", ["SUB_ORDERS:E"], wrap((req) => subscriptionModule.sendToKitchen(req.user, (req.body || {}).delivery_date), "Send to kitchen"));
+api("post", "/sub/order/charge", ["SUB_ORDERS:E"], wrap((req) => subscriptionModule.chargeOrder(req.user, req.body || {}), "Charge order"));
+api("post", "/sub/order/status", ["SUB_ORDERS:E"], wrap((req) => subscriptionModule.setOrderStatus(req.user, req.body || {}), "Order status"));
+api("get", "/sub/customers/:org_id", ["SUB_CUSTOMERS"], wrap((req) => subscriptionModule.listCustomers(req.user.org_id, req.query.q), "Subscribers"));
+api("get", "/sub/customer/:org_id/:customer_id", ["SUB_CUSTOMERS"], wrap((req) => subscriptionModule.customerDetail(req.user.org_id, req.params.customer_id), "Subscriber"));
 // Suggested split for the dispatch screen (kitchen); qty may be overridden with ?qty=ITEM:QTY,ITEM:QTY
 api("get", "/batch-suggest/:org_id/:indent_number", [K, "INDENTS"], wrap((req) => {
   const qty = Object.fromEntries(String(req.query.qty || "").split(",").filter(Boolean).map((p) => p.split(":")));

@@ -11,7 +11,7 @@ const TOKEN_TTL = process.env.JWT_TTL || '7d';
 
 // User types (data scope): A admin, O operations manager, B branch, K kitchen, X external customer.
 // Screen access comes from the user's role (Role Master); see common/screens.js.
-const ROLES = { ADMIN: 'A', OPS: 'O', BRANCH: 'B', KITCHEN: 'K', EXTERNAL: 'X' };
+const ROLES = { ADMIN: 'A', OPS: 'O', BRANCH: 'B', KITCHEN: 'K', EXTERNAL: 'X', SUBSCRIBER: 'S' };
 
 const signToken = (u) =>
     jwt.sign(
@@ -47,6 +47,11 @@ const requireAuth = (roles) => async (req, res, next) => {
         req.user = jwt.verify(token, SECRET);
     } catch (e) {
         return authError(res, 401, e.name === 'TokenExpiredError' ? 'Session expired - please log in again' : 'Please log in');
+    }
+    // Online subscribers only reach routes that name 'S' explicitly (never staff routes, even "any user" ones)
+    if (req.user.user_type === ROLES.SUBSCRIBER) {
+        if (!(roles || []).includes(ROLES.SUBSCRIBER)) return authError(res, 403, 'You do not have access to this');
+        return next();
     }
     if (roles && roles.length && req.user.user_type !== ROLES.ADMIN) {
         const types = roles.filter((r) => r.length === 1);

@@ -266,6 +266,164 @@ const MIGRATIONS = [
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
     ],
   },
+  {
+    // Online subscriber module (weekly meal plans sold to the public)
+    id: "009_subscriptions",
+    table: "product_master",
+    columns: [
+      ["sub_description", "VARCHAR(500) NULL AFTER default_taxable"], // shown on the online menu
+      ["sub_diet", "VARCHAR(1) NULL AFTER sub_description"],          // V veg, N non-veg, E egg
+      ["sub_allergens", "VARCHAR(200) NULL AFTER sub_diet"],           // comma list: Milk, Nuts, Gluten...
+      ["sub_image_url", "VARCHAR(500) NULL AFTER sub_allergens"],
+    ],
+    sql: [
+      `CREATE TABLE IF NOT EXISTS sub_settings (
+        org_id VARCHAR(5) NOT NULL,
+        hub_branch_id VARCHAR(10) NULL,          -- branch that raises the weekly kitchen indent
+        delivery_weekday TINYINT NOT NULL DEFAULT 0, -- 0 Sunday ... 6 Saturday
+        cutoff_days_before TINYINT NOT NULL DEFAULT 3,
+        cutoff_time VARCHAR(5) NOT NULL DEFAULT '23:59',
+        gst_rate DECIMAL(6,3) NOT NULL DEFAULT 5.000,
+        qst_rate DECIMAL(6,3) NOT NULL DEFAULT 9.975,
+        taxable VARCHAR(1) NOT NULL DEFAULT 'Y',
+        min_meals INT NOT NULL DEFAULT 5,
+        shop_name VARCHAR(100) NULL,
+        support_email VARCHAR(100) NULL,
+        support_phone VARCHAR(30) NULL,
+        updated_by VARCHAR(100) NULL, updated_date DATETIME NULL,
+        PRIMARY KEY (org_id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+      `CREATE TABLE IF NOT EXISTS sub_plan (
+        org_id VARCHAR(5) NOT NULL,
+        plan_id VARCHAR(20) NOT NULL,
+        plan_name VARCHAR(100) NOT NULL,
+        meals_per_week INT NOT NULL,
+        price DECIMAL(10,2) NOT NULL,
+        description VARCHAR(500) NULL,
+        sort_order INT NOT NULL DEFAULT 0,
+        status VARCHAR(1) NOT NULL DEFAULT 'A',
+        created_by VARCHAR(100) NULL, created_date DATETIME NULL,
+        updated_by VARCHAR(100) NULL, updated_date DATETIME NULL,
+        PRIMARY KEY (org_id, plan_id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+      `CREATE TABLE IF NOT EXISTS sub_zone (
+        org_id VARCHAR(5) NOT NULL,
+        zone_id VARCHAR(20) NOT NULL,
+        zone_name VARCHAR(100) NOT NULL,
+        postal_prefixes VARCHAR(1000) NOT NULL,   -- first 3 characters of postal codes, comma separated (H1A,H2B,...)
+        delivery_fee DECIMAL(10,2) NOT NULL DEFAULT 0,
+        status VARCHAR(1) NOT NULL DEFAULT 'A',
+        sort_order INT NOT NULL DEFAULT 0,
+        created_by VARCHAR(100) NULL, created_date DATETIME NULL,
+        updated_by VARCHAR(100) NULL, updated_date DATETIME NULL,
+        PRIMARY KEY (org_id, zone_id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+      `CREATE TABLE IF NOT EXISTS sub_menu_week (
+        org_id VARCHAR(5) NOT NULL,
+        delivery_date DATE NOT NULL,
+        status VARCHAR(1) NOT NULL DEFAULT 'D',  -- D draft, P published, C cut off (orders locked), K sent to kitchen
+        cutoff_at DATETIME NOT NULL,             -- local time (INVOICE_TZ)
+        note VARCHAR(500) NULL,
+        indent_numbers VARCHAR(200) NULL,
+        created_by VARCHAR(100) NULL, created_date DATETIME NULL,
+        updated_by VARCHAR(100) NULL, updated_date DATETIME NULL,
+        PRIMARY KEY (org_id, delivery_date)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+      `CREATE TABLE IF NOT EXISTS sub_menu_item (
+        org_id VARCHAR(5) NOT NULL,
+        delivery_date DATE NOT NULL,
+        product_id VARCHAR(15) NOT NULL,
+        sort_order INT NOT NULL DEFAULT 0,
+        chef_pick VARCHAR(1) NOT NULL DEFAULT 'N', -- used to fill meals the customer did not choose
+        max_qty INT NULL,                          -- optional cap for the week
+        PRIMARY KEY (org_id, delivery_date, product_id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+      `CREATE TABLE IF NOT EXISTS sub_customer (
+        org_id VARCHAR(5) NOT NULL,
+        customer_id VARCHAR(20) NOT NULL,
+        email VARCHAR(150) NOT NULL,
+        pwd VARCHAR(100) NOT NULL,
+        full_name VARCHAR(150) NOT NULL,
+        phone VARCHAR(30) NULL,
+        address_line1 VARCHAR(200) NULL,
+        address_line2 VARCHAR(200) NULL,
+        city VARCHAR(100) NULL,
+        postal_code VARCHAR(10) NULL,
+        zone_id VARCHAR(20) NULL,
+        delivery_notes VARCHAR(500) NULL,
+        diet_pref VARCHAR(1) NULL,               -- V / N / null (no preference)
+        allergies VARCHAR(300) NULL,
+        stripe_customer_id VARCHAR(100) NULL,
+        card_brand VARCHAR(20) NULL, card_last4 VARCHAR(4) NULL,
+        stripe_payment_method VARCHAR(100) NULL,
+        status VARCHAR(1) NOT NULL DEFAULT 'A',
+        created_date DATETIME NULL, updated_date DATETIME NULL,
+        PRIMARY KEY (org_id, customer_id),
+        UNIQUE KEY ux_sub_customer_email (org_id, email)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+      `CREATE TABLE IF NOT EXISTS sub_subscription (
+        org_id VARCHAR(5) NOT NULL,
+        subscription_id VARCHAR(20) NOT NULL,
+        customer_id VARCHAR(20) NOT NULL,
+        plan_id VARCHAR(20) NOT NULL,
+        status VARCHAR(1) NOT NULL DEFAULT 'A',  -- A active, P paused, C cancelled
+        start_date DATE NOT NULL,                -- first delivery
+        paused_until DATE NULL,
+        cancelled_date DATETIME NULL, cancel_reason VARCHAR(300) NULL,
+        created_date DATETIME NULL, updated_date DATETIME NULL,
+        PRIMARY KEY (org_id, subscription_id),
+        KEY ix_sub_customer (org_id, customer_id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+      `CREATE TABLE IF NOT EXISTS sub_order (
+        org_id VARCHAR(5) NOT NULL,
+        order_id VARCHAR(20) NOT NULL,
+        customer_id VARCHAR(20) NOT NULL,
+        subscription_id VARCHAR(20) NULL,
+        delivery_date DATE NOT NULL,
+        plan_id VARCHAR(20) NOT NULL,
+        meals INT NOT NULL,
+        status VARCHAR(1) NOT NULL DEFAULT 'O',  -- O open (choosing), P awaiting payment, C confirmed/paid, F payment failed, K in kitchen, D delivered, S skipped, X cancelled
+        picked_by VARCHAR(1) NOT NULL DEFAULT 'C', -- C customer, A auto (chef's choice)
+        subtotal DECIMAL(10,2) NOT NULL DEFAULT 0,
+        delivery_fee DECIMAL(10,2) NOT NULL DEFAULT 0,
+        gst_amount DECIMAL(10,2) NOT NULL DEFAULT 0,
+        qst_amount DECIMAL(10,2) NOT NULL DEFAULT 0,
+        total DECIMAL(10,2) NOT NULL DEFAULT 0,
+        ship_name VARCHAR(150) NULL, ship_phone VARCHAR(30) NULL,
+        ship_address VARCHAR(500) NULL, ship_postal VARCHAR(10) NULL, zone_id VARCHAR(20) NULL,
+        delivery_notes VARCHAR(500) NULL,
+        delivered_date DATETIME NULL, delivered_by VARCHAR(100) NULL,
+        created_date DATETIME NULL, updated_date DATETIME NULL,
+        PRIMARY KEY (org_id, order_id),
+        UNIQUE KEY ux_sub_order_week (org_id, customer_id, delivery_date),
+        KEY ix_sub_order_date (org_id, delivery_date, status)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+      `CREATE TABLE IF NOT EXISTS sub_order_item (
+        org_id VARCHAR(5) NOT NULL,
+        order_id VARCHAR(20) NOT NULL,
+        product_id VARCHAR(15) NOT NULL,
+        qty INT NOT NULL,
+        PRIMARY KEY (org_id, order_id, product_id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+      `CREATE TABLE IF NOT EXISTS sub_payment (
+        payment_id BIGINT NOT NULL AUTO_INCREMENT,
+        org_id VARCHAR(5) NOT NULL,
+        order_id VARCHAR(20) NOT NULL,
+        customer_id VARCHAR(20) NOT NULL,
+        amount DECIMAL(10,2) NOT NULL,
+        provider VARCHAR(10) NOT NULL,           -- stripe | mock | manual
+        provider_ref VARCHAR(200) NULL,          -- checkout session / payment intent id
+        status VARCHAR(1) NOT NULL,              -- P pending, S succeeded, F failed, R refunded
+        card_brand VARCHAR(20) NULL, card_last4 VARCHAR(4) NULL,
+        receipt_url VARCHAR(500) NULL,
+        failure_message VARCHAR(500) NULL,
+        created_date DATETIME NULL, updated_date DATETIME NULL,
+        PRIMARY KEY (payment_id),
+        KEY ix_sub_payment_order (org_id, order_id),
+        KEY ix_sub_payment_ref (provider_ref)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+    ],
+  },
 ];
 
 (async () => {
@@ -335,6 +493,33 @@ const MIGRATIONS = [
          WHEN 'B' THEN 'BRANCH' WHEN 'X' THEN 'EXTERNAL' END WHERE org_id = ? AND role_id IS NULL`, [org_id]);
   }
   console.log(`008_roles: ${seeded ? "created " + seeded + " system role(s)" : "OK"}`);
+
+  // 009: subscriber module defaults per org (settings row + the three plans sold on weeklymeals.ca)
+  let subSeeded = 0;
+  for (const { org_id } of orgs) {
+    const [s] = await conn.query(`INSERT IGNORE INTO sub_settings (org_id, shop_name) VALUES (?, 'Thanjai Weekly Meals')`, [org_id]);
+    subSeeded += s.affectedRows;
+    const [[{ n }]] = await conn.query(`SELECT COUNT(*) AS n FROM sub_plan WHERE org_id = ?`, [org_id]);
+    if (!n) {
+      for (const [id, name, meals, price, sort] of [["STARTER", "Starter Plan", 5, 64.99, 1], ["FAMILY", "Family Plan", 10, 119.99, 2], ["VALUE", "Value Plan", 15, 169.99, 3]]) {
+        await conn.query(`INSERT INTO sub_plan (org_id, plan_id, plan_name, meals_per_week, price, sort_order, created_by, created_date)
+                          VALUES (?, ?, ?, ?, ?, ?, 'migration', NOW())`, [org_id, id, name, meals, price, sort]);
+      }
+      subSeeded++;
+    }
+  }
+  // the Operations Manager system role gets the new subscription screens once
+  for (const { org_id } of orgs) {
+    const [[{ m }]] = await conn.query(`SELECT COUNT(*) AS m FROM role_screen WHERE org_id = ? AND screen_code LIKE 'SUB\\_%'`, [org_id]);
+    if (!m) {
+      for (const [code, edit] of [["SUB_ORDERS", "Y"], ["SUB_SETUP", "Y"], ["SUB_CUSTOMERS", "N"]]) {
+        const [r] = await conn.query(`INSERT IGNORE INTO role_screen (org_id, role_id, screen_code, can_edit)
+                                      SELECT org_id, role_id, ?, ? FROM role_master WHERE org_id = ? AND role_id = 'OPS'`, [code, edit, org_id]);
+        subSeeded += r.affectedRows;
+      }
+    }
+  }
+  console.log(`009_subscriptions: ${subSeeded ? "defaults created" : "OK"}`);
 
   await conn.end();
 })().catch((e) => {
