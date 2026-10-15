@@ -19,10 +19,9 @@ REM No Stripe key = TEST MODE (no card is charged)
 set STRIPE_SECRET_KEY=
 set CORS_ORIGINS=http://localhost:4003
 
-if not exist "client\build\index.html" (
-  echo Unpacking the screens...
-  powershell -NoProfile -Command "Expand-Archive -Path client-build.zip -DestinationPath client -Force" || goto :end
-)
+echo Unpacking the screens...
+if exist "client\build" rmdir /s /q "client\build"
+powershell -NoProfile -Command "Expand-Archive -Path client-build.zip -DestinationPath client -Force" || goto :end
 
 echo.
 echo [1/4] Installing packages...
