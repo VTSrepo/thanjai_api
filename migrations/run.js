@@ -1,4 +1,5 @@
 // Idempotent DB migrations. Usage (same env vars as the API):  node migrations/run.js
+require("dotenv").config({ path: require("path").join(__dirname, "..", ".env") });
 const mysql = require("mysql2/promise");
 
 const MIGRATIONS = [
