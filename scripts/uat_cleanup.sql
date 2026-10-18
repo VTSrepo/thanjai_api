@@ -1,7 +1,8 @@
 -- Thanjai Restaurant: remove UAT test transactions before go-live.
 -- KEEPS masters: branch_master, product_master, prod_selling_price_master, user_master, emp_master,
 --                role_master, role_screen, category_master, business_unit_master, organization_master,
---                account_master, vts_ref_master, vts_inventory_config.
+--                account_master, vts_ref_master, vts_inventory_config,
+--                online shop setup: sub_settings, sub_plan, sub_zone.
 -- TAKE A BACKUP FIRST:  mysqldump -u <user> -p thanjai_restaurant > before_cleanup.sql
 -- Run:                  mysql -u <user> -p thanjai_restaurant < scripts/uat_cleanup.sql
 
@@ -29,6 +30,16 @@ TRUNCATE TABLE vts_eod_ops;
 TRUNCATE TABLE production_data;
 TRUNCATE TABLE emp_timesheet;
 
+-- online weekly meals: test customers, subscriptions, menus, orders, payments
+TRUNCATE TABLE sub_payment;
+TRUNCATE TABLE sub_order_item;
+TRUNCATE TABLE sub_order;
+TRUNCATE TABLE sub_subscription;
+TRUNCATE TABLE sub_customer;
+TRUNCATE TABLE sub_menu_item;
+TRUNCATE TABLE sub_menu_week;
+UPDATE vts_seq_generator SET last_seq_no = 0 WHERE seq_type IN ('SUBC', 'SUBS', 'SUBO');
+
 -- restart indent / invoice / receipt / batch numbers (product id sequence PRD is kept)
 UPDATE vts_seq_generator SET last_seq_no = 0 WHERE seq_type IN ('IND', 'INV', 'RCP', 'BATCH');
 
@@ -37,5 +48,7 @@ SET FOREIGN_KEY_CHECKS = 1;
 SELECT 'indent_header' AS tbl, COUNT(*) AS rows_left FROM indent_header
 UNION ALL SELECT 'invoice_header', COUNT(*) FROM invoice_header
 UNION ALL SELECT 'batch_master', COUNT(*) FROM batch_master
+UNION ALL SELECT 'sub_order', COUNT(*) FROM sub_order
+UNION ALL SELECT 'sub_customer', COUNT(*) FROM sub_customer
 UNION ALL SELECT 'product_master', COUNT(*) FROM product_master
 UNION ALL SELECT 'user_master', COUNT(*) FROM user_master;
