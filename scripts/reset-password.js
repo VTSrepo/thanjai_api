@@ -1,5 +1,6 @@
 // Sets a new password for a staff user (e.g. a forgotten admin password) directly in the database.
 // Usage: node scripts/reset-password.js <user id> <new password>     (DB settings from the same env vars as the API)
+require("dotenv").config({ path: require("path").join(__dirname, "..", ".env") });
 const mysql = require("mysql2/promise");
 const bcrypt = require("bcryptjs");
 

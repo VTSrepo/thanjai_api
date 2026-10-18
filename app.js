@@ -352,6 +352,7 @@ api("post", "/sub/order/charge", ["SUB_ORDERS:E"], wrap((req) => subscriptionMod
 api("post", "/sub/order/status", ["SUB_ORDERS:E"], wrap((req) => subscriptionModule.setOrderStatus(req.user, req.body || {}), "Order status"));
 api("get", "/sub/customers/:org_id", ["SUB_CUSTOMERS"], wrap((req) => subscriptionModule.listCustomers(req.user.org_id, req.query.q), "Subscribers"));
 api("get", "/sub/customer/:org_id/:customer_id", ["SUB_CUSTOMERS"], wrap((req) => subscriptionModule.customerDetail(req.user.org_id, req.params.customer_id), "Subscriber"));
+api("post", "/sub/customer/:org_id/:customer_id/reset-password", ["SUB_CUSTOMERS:E"], wrap((req) => subscriptionModule.resetCustomerPassword(req.user, req.params.customer_id, req.body), "Subscriber password"));
 // Suggested split for the dispatch screen (kitchen); qty may be overridden with ?qty=ITEM:QTY,ITEM:QTY
 api("get", "/batch-suggest/:org_id/:indent_number", [K, "INDENTS"], wrap((req) => {
   const qty = Object.fromEntries(String(req.query.qty || "").split(",").filter(Boolean).map((p) => p.split(":")));
