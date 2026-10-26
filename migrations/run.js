@@ -426,6 +426,16 @@ const MIGRATIONS = [
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
     ],
   },
+  {
+    id: "010_indent_change_requests",
+    table: "indent_header",
+    columns: [
+      ["kitchen_note", "VARCHAR(500) NULL AFTER priority_flag"],   // kitchen's message when it sends an indent back (status Q)
+      ["change_requested_by", "VARCHAR(100) NULL AFTER kitchen_note"],
+      ["change_requested_date", "DATETIME NULL AFTER change_requested_by"],
+      ["received_date", "DATETIME NULL AFTER change_requested_date"],
+    ],
+  },
 ];
 
 (async () => {
@@ -530,6 +540,14 @@ const MIGRATIONS = [
     subSeeded += r.affectedRows;
   }
   console.log(`009_subscriptions: ${subSeeded ? "defaults created" : "OK"}`);
+
+  // 010: invoice is finalized after receipt now (status I). Indents that were finalized before dispatch under the
+  // old flow (F) go back to Accepted so the kitchen can dispatch them; their invoice is finalized after receipt.
+  const [f] = await conn.query(`UPDATE indent_header SET status = 'A', inv_finalized_by = NULL, inv_finalized_date = NULL WHERE status = 'F'`);
+  // indents received under the old flow already have their invoice: mark them Invoiced
+  const [ri] = await conn.query(`UPDATE indent_header h SET h.status = 'I'
+     WHERE h.status = 'R' AND EXISTS (SELECT 1 FROM invoice_header i WHERE i.org_id = h.org_id AND i.indent_number = h.indent_number)`);
+  console.log(`010_invoice_after_receipt: ${f.affectedRows || ri.affectedRows ? `${f.affectedRows} back to Accepted, ${ri.affectedRows} marked Invoiced` : "OK"}`);
 
   await conn.end();
 })().catch((e) => {

@@ -19,6 +19,7 @@ const { AuthModule } = require("./lib/modules/auth_module");
 const { requireAuth, isBranchScoped, ROLES } = require("./common/auth");
 const { roleModule } = require("./lib/modules/role_module");
 const { batchModule } = require("./lib/modules/batch_module");
+const { indentFlow } = require("./lib/modules/indent_flow_module");
 const { productImport } = require("./lib/modules/product_import_module");
 const { subscriptionModule } = require("./lib/modules/subscription_module");
 const BaseDao = require("./lib/dao/base_dao");
@@ -135,11 +136,13 @@ const checkIndentOwnerParam = async (req, res, next) => {
   }
 };
 
-// Who may move an indent to which status (BRD): C by branch/external, A & D by kitchen, R by branch/external.
-// F (invoice finalized) is set only through /invoice-setup by admin.
+// Who may move an indent to which status: C by branch/external, A & D by kitchen, R by branch/external.
+// Q (sent back for changes) and its resubmission go through /indent/request-change and /indent/resubmit.
+// I (invoiced) is set by head office through /invoice-setup after receipt.
 const TRANSITIONS = { C: [B, X], A: [K], D: [K], R: [B, X] };
-// Required current status for each move: accept a new indent, dispatch only after admin finalized the invoice, receive after dispatch.
-const FROM_STATUS = { A: ["C"], D: ["F"], R: ["D"] };
+// Required current status for each move: accept a requested indent, dispatch an accepted one, receive after dispatch.
+// (F = finalized under the old flow, before dispatch; still dispatchable.)
+const FROM_STATUS = { A: ["C"], D: ["A", "F"], R: ["D"] };
 const checkIndentWrite = async (req, res, next) => {
   const u = req.user;
   const indent = (req.body && req.body.indent) || {};
@@ -150,6 +153,8 @@ const checkIndentWrite = async (req, res, next) => {
       indent.branch_id = u.branch_id;
       indent.user_id = u.user_id;
       indent.status = "C";
+      const wrong = await indentFlow.checkKitchenItems(u.org_id, indent.kitchen_id, indent.indent_details);
+      if (wrong) return res.status(400).json({ status: 400, code: "WRONG_KITCHEN", message: wrong });
       return next();
     }
     const existing = await findIndent(u.org_id, indent.indent_number);
@@ -161,8 +166,8 @@ const checkIndentWrite = async (req, res, next) => {
     }
     const from = FROM_STATUS[indent.status];
     if (!from || !from.includes(existing.status)) {
-      const msg = indent.status === "D" && existing.status === "A"
-        ? "Waiting for admin to finalize the invoice before dispatch"
+      const msg = existing.status === "Q"
+        ? "This indent was sent back to the branch for changes"
         : "This indent has already moved on. Refresh and try again.";
       return res.status(409).json({ status: 409, code: "WRONG_STATUS", message: msg });
     }
@@ -174,7 +179,8 @@ const checkIndentWrite = async (req, res, next) => {
   }
 };
 
-// Dispatch (F -> D): take stock from batches (chosen split or oldest first). Blocks when batch stock is short.
+// Dispatch (A -> D): take stock from batches (chosen split or oldest first). Stock is not enforced:
+// quantity without batch stock goes out as "NO BATCH" and the response carries a warning.
 // If the indent update then fails, the stock is put back.
 const dispatchBatches = async (req, res, next) => {
   const indent = (req.body && req.body.indent) || {};
@@ -185,12 +191,18 @@ const dispatchBatches = async (req, res, next) => {
     const r = await batchModule.applyDispatch(req.user, target, indent.indent_details || [], indent.batch_alloc || {});
     if (!r.ok) return res.status(r.status).json(r);
     delete indent.batch_alloc;
-    if (r.applied.length) {
+    if (r.applied.length || r.unbatched.length) {
       const send = res.send.bind(res);
       res.send = (body) => {
         if (res.statusCode >= 300) {
           batchModule.reverseDispatch(req.user, target, r.applied).finally(() => send(body));
           return res;
+        }
+        if (r.warning) {
+          try {
+            const obj = typeof body === "string" ? JSON.parse(body) : body;
+            if (obj && typeof obj === "object") return send(typeof body === "string" ? JSON.stringify({ ...obj, warning: r.warning }) : { ...obj, warning: r.warning });
+          } catch (e) { /* not JSON: send as is */ }
         }
         return send(body);
       };
@@ -236,6 +248,8 @@ api("get", "/business/:org_id/:bu_id", ALL, runLegacy(BusinessAction, "GetBusine
 api("get", "/category", ALL, runLegacy(ProductAction, "GetCategoryList"));
 api("post", "/indent", [A, B, K, X], checkIndentWrite, dispatchBatches, runLegacy(IndentAction, "createIndent"));
 api("get", "/indents/:org_id", ALL, scopeIndentList, runLegacy(IndentAction, "GetIndentList"));
+api("post", "/indent/request-change", [K], wrap((req) => indentFlow.requestChange(req.user, req.body || {}), "Request indent change"));
+api("post", "/indent/resubmit", [B, X], wrap((req) => indentFlow.resubmit(req.user, req.body || {}), "Resubmit indent"));
 api("get", "/indentdetail/:org_id", ALL, checkIndentOwner, runLegacy(IndentAction, "GetIndentDetail"));
 api("get", "/indent-report/:org_id", ["R_INDENT"], runLegacy(IndentAction, "GetIndentReport"));
 api("get", "/production-monitoring/:org_id", [A, K], runLegacy(ProductionAction, "GetProductions"));

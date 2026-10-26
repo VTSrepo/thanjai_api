@@ -49,7 +49,7 @@ const DEFAULT_ROLES = [
   },
   {
     role_id: 'KITCHEN', role_name: 'Kitchen', scope: 'K', description: 'Accept and dispatch indents',
-    screens: { INDENTS: 'E', INVENTORY: 'V', TIMESHEET: 'E' },
+    screens: { INDENTS: 'E', BATCHES: 'E', INVENTORY: 'V', TIMESHEET: 'E' },
   },
   {
     role_id: 'BRANCH', role_name: 'Branch', scope: 'B', description: 'Order, receive, invoices',
