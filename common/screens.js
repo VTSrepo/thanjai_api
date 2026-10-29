@@ -24,6 +24,9 @@ const SCREENS = [
   { code: 'SUB_ORDERS', label: 'Online orders (weekly meals)', group: 'Online subscriptions' },
   { code: 'SUB_SETUP', label: 'Plans, weekly menu, delivery zones, shop settings', group: 'Online subscriptions' },
   { code: 'SUB_CUSTOMERS', label: 'Subscribers', group: 'Online subscriptions' },
+  { code: 'RES_BOOKINGS', label: 'Reservations: floor plan, bookings, staff blocks', group: 'Reservations' },
+  { code: 'RES_REPORTS', label: 'Reservation reports (print for the board)', group: 'Reservations' },
+  { code: 'RES_SETUP', label: 'Reservation setup: tables, seatings, limits, closed dates', group: 'Reservations' },
 ];
 const SCREEN_CODES = new Set(SCREENS.map((s) => s.code));
 
@@ -45,6 +48,7 @@ const DEFAULT_ROLES = [
       DASHBOARD: 'V', INDENTS: 'V', INVOICE_SETUP: 'E', BATCHES: 'E', INVENTORY: 'E', STOCK_IMPORT: 'E',
       PAYMENTS: 'E', R_INVOICES: 'V', R_INDENT: 'V', R_PRODUCTION: 'V', R_BATCH: 'V', M_PRODUCT: 'V',
       SUB_ORDERS: 'E', SUB_SETUP: 'E', SUB_CUSTOMERS: 'V',
+      RES_BOOKINGS: 'E', RES_REPORTS: 'V', RES_SETUP: 'E',
     },
   },
   {
@@ -52,8 +56,8 @@ const DEFAULT_ROLES = [
     screens: { INDENTS: 'E', BATCHES: 'E', INVENTORY: 'V', TIMESHEET: 'E' },
   },
   {
-    role_id: 'BRANCH', role_name: 'Branch', scope: 'B', description: 'Order, receive, invoices',
-    screens: { HOME: 'V', INDENTS: 'E', MY_INVOICES: 'V' },
+    role_id: 'BRANCH', role_name: 'Branch', scope: 'B', description: 'Order, receive, invoices, table reservations',
+    screens: { HOME: 'V', INDENTS: 'E', MY_INVOICES: 'V', RES_BOOKINGS: 'E', RES_REPORTS: 'V' },
   },
   {
     role_id: 'EXTERNAL', role_name: 'External customer', scope: 'X', description: 'Order, receive, invoices',

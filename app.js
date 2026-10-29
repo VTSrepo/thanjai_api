@@ -22,6 +22,7 @@ const { batchModule } = require("./lib/modules/batch_module");
 const { indentFlow } = require("./lib/modules/indent_flow_module");
 const { productImport } = require("./lib/modules/product_import_module");
 const { subscriptionModule } = require("./lib/modules/subscription_module");
+const { reservationModule } = require("./lib/modules/reservation_module");
 const BaseDao = require("./lib/dao/base_dao");
 
 const app = express();
@@ -367,6 +368,26 @@ api("post", "/sub/order/status", ["SUB_ORDERS:E"], wrap((req) => subscriptionMod
 api("get", "/sub/customers/:org_id", ["SUB_CUSTOMERS"], wrap((req) => subscriptionModule.listCustomers(req.user.org_id, req.query.q), "Subscribers"));
 api("get", "/sub/customer/:org_id/:customer_id", ["SUB_CUSTOMERS"], wrap((req) => subscriptionModule.customerDetail(req.user.org_id, req.params.customer_id), "Subscriber"));
 api("post", "/sub/customer/:org_id/:customer_id/reset-password", ["SUB_CUSTOMERS:E"], wrap((req) => subscriptionModule.resetCustomerPassword(req.user, req.params.customer_id, req.body), "Subscriber password"));
+// ---- Table reservations ------------------------------------------------------------
+// public (booking page /reserve; API under /rsv so it never clashes with the page addresses)
+const clientIp = (req) => String(req.headers["x-forwarded-for"] || "").split(",")[0].trim() || (req.socket && req.socket.remoteAddress) || "";
+app.get("/rsv/info", wrap(() => reservationModule.info(), "Reservation info"));
+app.get("/rsv/availability", wrap((req) => reservationModule.availability(req.query.date), "Reservation availability"));
+app.post("/rsv/book", wrap((req) => reservationModule.book(req.body || {}, clientIp(req)), "Reservation book"));
+app.get("/rsv/booking/:token", wrap((req) => reservationModule.getByToken(req.params.token), "Reservation view"));
+app.post("/rsv/booking/:token/cancel", wrap((req) => reservationModule.cancelByToken(req.params.token), "Reservation cancel"));
+// staff
+api("get", "/res/day/:org_id", ["RES_BOOKINGS", "RES_REPORTS"], wrap((req) => reservationModule.day(req.user.org_id, req.query.date), "Reservations day"));
+api("get", "/res/search/:org_id", ["RES_BOOKINGS", "RES_REPORTS"], wrap((req) => reservationModule.search(req.user.org_id, req.query.q), "Reservation search"));
+api("post", "/res/booking", ["RES_BOOKINGS:E"], wrap((req) => reservationModule.staffCreate(req.user, req.body || {}), "Staff reservation"));
+api("post", "/res/booking/update", ["RES_BOOKINGS:E"], wrap((req) => reservationModule.staffUpdate(req.user, req.body || {}), "Change reservation"));
+api("post", "/res/booking/status", ["RES_BOOKINGS:E"], wrap((req) => reservationModule.setStatus(req.user, req.body || {}), "Reservation status"));
+api("get", "/res/setup/:org_id", ["RES_SETUP"], wrap((req) => reservationModule.getSetup(req.user.org_id), "Reservation setup"));
+api("post", "/res/settings", ["RES_SETUP:E"], wrap((req) => reservationModule.saveSettings(req.user, req.body || {}), "Reservation settings"));
+api("post", "/res/seating", ["RES_SETUP:E"], wrap((req) => reservationModule.saveSeating(req.user, req.body || {}), "Reservation seating"));
+api("post", "/res/table", ["RES_SETUP:E"], wrap((req) => reservationModule.saveTable(req.user, req.body || {}), "Reservation table"));
+api("post", "/res/closure", ["RES_SETUP:E"], wrap((req) => reservationModule.saveClosure(req.user, req.body || {}), "Reservation closure"));
+api("post", "/res/closure/delete", ["RES_SETUP:E"], wrap((req) => reservationModule.deleteClosure(req.user, req.body || {}), "Reservation reopen"));
 // Suggested split for the dispatch screen (kitchen); qty may be overridden with ?qty=ITEM:QTY,ITEM:QTY
 api("get", "/batch-suggest/:org_id/:indent_number", [K, "INDENTS"], wrap((req) => {
   const qty = Object.fromEntries(String(req.query.qty || "").split(",").filter(Boolean).map((p) => p.split(":")));

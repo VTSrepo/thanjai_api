@@ -436,6 +436,103 @@ const MIGRATIONS = [
       ["received_date", "DATETIME NULL AFTER change_requested_date"],
     ],
   },
+  {
+    // Table reservations for the dining room (public booking page /reserve + staff screens)
+    id: "011_reservations",
+    table: "res_settings",
+    columns: [],
+    sql: [
+      `CREATE TABLE IF NOT EXISTS res_settings (
+        org_id VARCHAR(5) NOT NULL,
+        max_reserved_seats INT NOT NULL DEFAULT 40,    -- chairs that can be reserved per seating (rest = walk-in)
+        days_ahead INT NOT NULL DEFAULT 30,            -- how far ahead customers can book
+        min_notice_minutes INT NOT NULL DEFAULT 60,    -- online booking closes this long before the seating
+        cancel_notice_minutes INT NOT NULL DEFAULT 60, -- customers can cancel online until this long before
+        max_party_online INT NOT NULL DEFAULT 12,      -- bigger groups are asked to call
+        seating_minutes INT NOT NULL DEFAULT 90,       -- shown to customers ("table is yours for about 90 minutes")
+        booking_open VARCHAR(1) NOT NULL DEFAULT 'Y',  -- N = online booking paused
+        restaurant_name VARCHAR(100) NULL,
+        phone VARCHAR(30) NULL,
+        address VARCHAR(300) NULL,
+        notify_email VARCHAR(300) NULL,                -- restaurant copy of every booking (comma separated)
+        guest_notes TEXT NULL,                         -- one line per point, shown on the booking page
+        updated_by VARCHAR(100) NULL, updated_date DATETIME NULL,
+        PRIMARY KEY (org_id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+      `CREATE TABLE IF NOT EXISTS res_seating (
+        org_id VARCHAR(5) NOT NULL,
+        seating_id VARCHAR(20) NOT NULL,
+        label VARCHAR(50) NOT NULL,                    -- Lunch / Dinner
+        start_time VARCHAR(5) NOT NULL,                -- HH:MM local time
+        weekdays VARCHAR(7) NOT NULL DEFAULT '0123456', -- days it runs: 0 Sunday ... 6 Saturday
+        sort_order INT NOT NULL DEFAULT 0,
+        status VARCHAR(1) NOT NULL DEFAULT 'A',
+        updated_by VARCHAR(100) NULL, updated_date DATETIME NULL,
+        PRIMARY KEY (org_id, seating_id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+      `CREATE TABLE IF NOT EXISTS res_table (
+        org_id VARCHAR(5) NOT NULL,
+        table_id VARCHAR(10) NOT NULL,                 -- A1, B10 ...
+        table_row VARCHAR(10) NULL,                    -- A / B / C
+        seats TINYINT NOT NULL,
+        pos_x DECIMAL(5,2) NOT NULL DEFAULT 50,        -- centre on the floor plan, % of width
+        pos_y DECIMAL(5,2) NOT NULL DEFAULT 50,        -- centre, % of height
+        width DECIMAL(5,2) NOT NULL DEFAULT 7,
+        height DECIMAL(5,2) NOT NULL DEFAULT 6,
+        orient VARCHAR(1) NOT NULL DEFAULT 'H',        -- H chairs above/below, V chairs left/right
+        online VARCHAR(1) NOT NULL DEFAULT 'Y',        -- N = staff only
+        status VARCHAR(1) NOT NULL DEFAULT 'A',
+        sort_order INT NOT NULL DEFAULT 0,
+        updated_by VARCHAR(100) NULL, updated_date DATETIME NULL,
+        PRIMARY KEY (org_id, table_id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+      `CREATE TABLE IF NOT EXISTS res_closure (
+        org_id VARCHAR(5) NOT NULL,
+        closed_date DATE NOT NULL,
+        seating_id VARCHAR(20) NOT NULL DEFAULT '',    -- '' = whole day
+        reason VARCHAR(200) NULL,
+        created_by VARCHAR(100) NULL, created_date DATETIME NULL,
+        PRIMARY KEY (org_id, closed_date, seating_id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+      `CREATE TABLE IF NOT EXISTS res_booking (
+        org_id VARCHAR(5) NOT NULL,
+        booking_id VARCHAR(15) NOT NULL,
+        booking_date DATE NOT NULL,
+        seating_id VARCHAR(20) NOT NULL,
+        start_time VARCHAR(5) NOT NULL,
+        guests INT NOT NULL,
+        seats INT NOT NULL,                            -- chairs of the booked tables (counts toward the limit)
+        table_ids VARCHAR(200) NOT NULL,               -- kept for history after a cancellation
+        kind VARCHAR(1) NOT NULL DEFAULT 'C',          -- C customer, B staff block
+        source VARCHAR(1) NOT NULL DEFAULT 'W',        -- W website, S staff
+        customer_name VARCHAR(150) NULL,
+        phone VARCHAR(30) NULL,
+        email VARCHAR(150) NULL,
+        notes VARCHAR(500) NULL,                       -- customer's request
+        staff_note VARCHAR(500) NULL,
+        status VARCHAR(1) NOT NULL DEFAULT 'C',        -- C confirmed, A arrived, N no-show, X cancelled
+        manage_token VARCHAR(48) NULL,
+        created_by VARCHAR(100) NULL, created_date DATETIME NULL,
+        updated_by VARCHAR(100) NULL, updated_date DATETIME NULL,
+        cancelled_by VARCHAR(100) NULL, cancelled_date DATETIME NULL,
+        cancel_reason VARCHAR(200) NULL,
+        PRIMARY KEY (org_id, booking_id),
+        UNIQUE KEY uq_res_booking_token (manage_token),
+        KEY ix_res_booking_slot (org_id, booking_date, seating_id),
+        KEY ix_res_booking_email (org_id, email)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+      // one row per table per seating while a booking holds it: the primary key makes double booking impossible
+      `CREATE TABLE IF NOT EXISTS res_booking_table (
+        org_id VARCHAR(5) NOT NULL,
+        booking_date DATE NOT NULL,
+        seating_id VARCHAR(20) NOT NULL,
+        table_id VARCHAR(10) NOT NULL,
+        booking_id VARCHAR(15) NOT NULL,
+        PRIMARY KEY (org_id, booking_date, seating_id, table_id),
+        KEY ix_res_bt_booking (org_id, booking_id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+    ],
+  },
 ];
 
 (async () => {
@@ -548,6 +645,34 @@ const MIGRATIONS = [
   const [ri] = await conn.query(`UPDATE indent_header h SET h.status = 'I'
      WHERE h.status = 'R' AND EXISTS (SELECT 1 FROM invoice_header i WHERE i.org_id = h.org_id AND i.indent_number = h.indent_number)`);
   console.log(`010_invoice_after_receipt: ${f.affectedRows || ri.affectedRows ? `${f.affectedRows} back to Accepted, ${ri.affectedRows} marked Invoiced` : "OK"}`);
+
+  // 011: reservations - settings, seatings and the dining-room tables (from the floor sketch) per org, once
+  const { TABLE_SEED, SEATING_SEED, SETTINGS_SEED } = require("../common/reservation_seed");
+  let resSeeded = 0;
+  for (const { org_id } of orgs) {
+    const [s] = await conn.query(`INSERT IGNORE INTO res_settings SET ?`, [{ org_id, ...SETTINGS_SEED }]);
+    resSeeded += s.affectedRows;
+    const [[{ t }]] = await conn.query(`SELECT COUNT(*) AS t FROM res_table WHERE org_id = ?`, [org_id]);
+    if (!t) {
+      for (const r of TABLE_SEED) await conn.query(`INSERT INTO res_table SET ?`, [{ org_id, ...r, updated_by: "migration", updated_date: new Date() }]);
+      resSeeded++;
+    }
+    const [[{ n }]] = await conn.query(`SELECT COUNT(*) AS n FROM res_seating WHERE org_id = ?`, [org_id]);
+    if (!n) {
+      for (const r of SEATING_SEED) await conn.query(`INSERT INTO res_seating SET ?`, [{ org_id, ...r, updated_by: "migration", updated_date: new Date() }]);
+      resSeeded++;
+    }
+    // the Operations Manager and Branch (restaurant) system roles get the reservation screens once
+    const [[{ m }]] = await conn.query(`SELECT COUNT(*) AS m FROM role_screen WHERE org_id = ? AND screen_code LIKE 'RES\\_%'`, [org_id]);
+    if (!m) {
+      for (const [role, code, edit] of [["OPS", "RES_BOOKINGS", "Y"], ["OPS", "RES_REPORTS", "N"], ["OPS", "RES_SETUP", "Y"], ["BRANCH", "RES_BOOKINGS", "Y"], ["BRANCH", "RES_REPORTS", "N"]]) {
+        const [r] = await conn.query(`INSERT IGNORE INTO role_screen (org_id, role_id, screen_code, can_edit)
+                                      SELECT org_id, role_id, ?, ? FROM role_master WHERE org_id = ? AND role_id = ?`, [code, edit, org_id, role]);
+        resSeeded += r.affectedRows;
+      }
+    }
+  }
+  console.log(`011_reservations: ${resSeeded ? "defaults created (tables, seatings, settings, role screens)" : "OK"}`);
 
   await conn.end();
 })().catch((e) => {
