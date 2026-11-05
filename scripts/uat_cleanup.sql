@@ -2,7 +2,8 @@
 -- KEEPS masters: branch_master, product_master, prod_selling_price_master, user_master, emp_master,
 --                role_master, role_screen, category_master, business_unit_master, organization_master,
 --                account_master, vts_ref_master, vts_inventory_config,
---                online shop setup: sub_settings, sub_plan, sub_zone.
+--                online shop setup: sub_settings, sub_plan, sub_zone,
+--                reservation setup: res_settings, res_seating, res_table, res_closure.
 -- TAKE A BACKUP FIRST:  mysqldump -u <user> -p thanjai_restaurant > before_cleanup.sql
 -- Run:                  mysql -u <user> -p thanjai_restaurant < scripts/uat_cleanup.sql
 
@@ -40,6 +41,11 @@ TRUNCATE TABLE sub_menu_item;
 TRUNCATE TABLE sub_menu_week;
 UPDATE vts_seq_generator SET last_seq_no = 0 WHERE seq_type IN ('SUBC', 'SUBS', 'SUBO');
 
+-- table reservations: test bookings (tables, seatings, limits and closed dates are kept)
+TRUNCATE TABLE res_booking_table;
+TRUNCATE TABLE res_booking;
+UPDATE vts_seq_generator SET last_seq_no = 0 WHERE seq_type = 'RESV';
+
 -- restart indent / invoice / receipt / batch numbers (product id sequence PRD is kept)
 UPDATE vts_seq_generator SET last_seq_no = 0 WHERE seq_type IN ('IND', 'INV', 'RCP', 'BATCH');
 
@@ -50,5 +56,7 @@ UNION ALL SELECT 'invoice_header', COUNT(*) FROM invoice_header
 UNION ALL SELECT 'batch_master', COUNT(*) FROM batch_master
 UNION ALL SELECT 'sub_order', COUNT(*) FROM sub_order
 UNION ALL SELECT 'sub_customer', COUNT(*) FROM sub_customer
+UNION ALL SELECT 'res_booking', COUNT(*) FROM res_booking
+UNION ALL SELECT 'res_table (kept)', COUNT(*) FROM res_table
 UNION ALL SELECT 'product_master', COUNT(*) FROM product_master
 UNION ALL SELECT 'user_master', COUNT(*) FROM user_master;
