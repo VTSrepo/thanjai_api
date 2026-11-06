@@ -1,6 +1,6 @@
 @echo off
 REM ============================================================
-REM  Thanjai - TABLE RESERVATIONS preview (runs beside your normal app)
+REM  Thanjai - TABLE RESERVATIONS + WEEKLY MEALS preview (runs beside your normal app)
 REM  Port 4004, database thanjai_res (a copy of thanjai_restaurant made on first run).
 REM  Your normal app (4002) and the subscriber preview (4003) are not touched.
 REM ============================================================
@@ -43,6 +43,7 @@ echo.
 echo [4/4] Starting on port %HOST_PORT%...
 echo   Staff app     : http://localhost:%HOST_PORT%/v1/        (menu Reservations; same logins as your local app)
 echo   Booking page  : http://localhost:%HOST_PORT%/v1/reserve
+echo   Weekly meals  : http://localhost:%HOST_PORT%/v1/meals
 echo   Press Ctrl+C to stop.
 echo.
 node index.js
