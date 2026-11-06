@@ -533,6 +533,73 @@ const MIGRATIONS = [
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
     ],
   },
+  {
+    // Reservations v2: 30-minute start times inside sessions, tables held for the table time, joinable tables,
+    // bookings without tables (staff allocate)
+    id: "012_reservation_slots",
+    table: "res_seating",
+    columns: [
+      ["end_time", "VARCHAR(5) NULL AFTER start_time"],          // last start time of the session (HH:MM)
+      ["interval_min", "INT NOT NULL DEFAULT 30 AFTER end_time"], // minutes between start times
+    ],
+  },
+  {
+    id: "012_reservation_slots_table",
+    table: "res_table",
+    columns: [["joinable", "VARCHAR(1) NOT NULL DEFAULT 'Y' AFTER online"]], // N = can only be booked on its own (A booths)
+  },
+  {
+    id: "012_reservation_slots_booking",
+    table: "res_booking",
+    columns: [["duration_min", "INT NULL AFTER start_time"]],  // how long the tables are held
+    sql: [
+      // one row per held table per 15-minute step: the primary key makes overlapping double bookings impossible
+      `CREATE TABLE IF NOT EXISTS res_booking_slot (
+        org_id VARCHAR(5) NOT NULL,
+        booking_date DATE NOT NULL,
+        slot_time VARCHAR(5) NOT NULL,
+        table_id VARCHAR(10) NOT NULL,
+        booking_id VARCHAR(15) NOT NULL,
+        PRIMARY KEY (org_id, booking_date, slot_time, table_id),
+        KEY ix_res_slot_booking (org_id, booking_id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+    ],
+  },
+  {
+    // Meals v2: Veg / Non-Veg / Combo plans priced as the sum of the chosen dishes after the plan's discount;
+    // dishes have a regular price, a kind (curry / combo meal) and a "costly" flag limited per plan
+    id: "013_meal_pricing",
+    table: "sub_plan",
+    columns: [
+      ["plan_type", "VARCHAR(1) NOT NULL DEFAULT 'C' AFTER plan_name"],      // V veg curries, N non-veg curries, C combo meals
+      ["discount_pct", "DECIMAL(5,2) NOT NULL DEFAULT 0 AFTER price"],        // off each dish's regular price
+      ["max_costly", "INT NULL AFTER discount_pct"],                          // most costly dishes in one week's order (NULL = no limit)
+    ],
+    sql: [
+      // a different discount for particular dishes in a plan
+      `CREATE TABLE IF NOT EXISTS sub_plan_discount (
+        org_id VARCHAR(5) NOT NULL,
+        plan_id VARCHAR(20) NOT NULL,
+        product_id VARCHAR(15) NOT NULL,
+        discount_pct DECIMAL(5,2) NOT NULL,
+        PRIMARY KEY (org_id, plan_id, product_id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+    ],
+  },
+  {
+    id: "013_meal_pricing_dish",
+    table: "product_master",
+    columns: [
+      ["sub_price", "DECIMAL(10,2) NULL AFTER sub_enabled"],                 // regular online price of one meal
+      ["sub_kind", "VARCHAR(1) NULL AFTER sub_price"],                       // C curry (Veg / Non-Veg plans), M combo meal
+      ["sub_costly", "VARCHAR(1) NOT NULL DEFAULT 'N' AFTER sub_kind"],      // Y = limited per plan
+    ],
+  },
+  {
+    id: "013_meal_pricing_item",
+    table: "sub_order_item",
+    columns: [["unit_price", "DECIMAL(10,2) NULL AFTER qty"]],               // price per meal charged (after discount)
+  },
 ];
 
 (async () => {
@@ -545,6 +612,9 @@ const MIGRATIONS = [
     password: process.env.WRITE_DB_PASSWORD,
     database,
   });
+  // remembered before the loop: 013 seeds the Veg / Non-Veg plans only when plan_type is first added
+  const [[{ hadPlanType }]] = await conn.query(
+    "SELECT COUNT(*) AS hadPlanType FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'sub_plan' AND COLUMN_NAME = 'plan_type'", [database]);
   // remembered before the loop: products already used on an online menu get sub_enabled = Y when the column is first added
   const [[{ hadSubEnabled }]] = await conn.query(
     "SELECT COUNT(*) AS hadSubEnabled FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'product_master' AND COLUMN_NAME = 'sub_enabled'", [database]);
@@ -673,6 +743,67 @@ const MIGRATIONS = [
     }
   }
   console.log(`011_reservations: ${resSeeded ? "defaults created (tables, seatings, settings, role screens)" : "OK"}`);
+
+  // 012: reservation sessions every 30 minutes (once): the seeded fixed seatings become Lunch 11:00-14:30 and
+  // Dinner 17:00-21:30; other seatings become single-time sessions; A booths cannot be joined; bookings move to
+  // res_booking_slot (tables held for the table time)
+  let resConv = 0;
+  for (const { org_id } of orgs) {
+    const [[st]] = await conn.query(`SELECT COUNT(*) AS n, SUM(end_time IS NULL) AS old FROM res_seating WHERE org_id = ?`, [org_id]);
+    if (!st.n || !Number(st.old)) continue;
+    const [[s]] = await conn.query(`SELECT seating_minutes FROM res_settings WHERE org_id = ?`, [org_id]);
+    const dur = (s && s.seating_minutes) || 90;
+    const [seats] = await conn.query(`SELECT * FROM res_seating WHERE org_id = ?`, [org_id]);
+    const seeded = ["L1", "L2", "D1", "D2", "D3"].every((id) => seats.some((x) => x.seating_id === id));
+    if (seeded) {
+      await conn.query(`UPDATE res_seating SET label = 'Lunch', start_time = '11:00', end_time = '14:30', interval_min = 30, sort_order = 1, status = 'A' WHERE org_id = ? AND seating_id = 'L1'`, [org_id]);
+      await conn.query(`UPDATE res_seating SET label = 'Dinner', start_time = '17:00', end_time = '21:30', interval_min = 30, sort_order = 2, status = 'A' WHERE org_id = ? AND seating_id = 'D1'`, [org_id]);
+      await conn.query(`UPDATE res_seating SET status = 'I', end_time = start_time WHERE org_id = ? AND seating_id IN ('L2','D2','D3')`, [org_id]);
+      // bookings made for the old seatings now belong to the session around their time
+      await conn.query(`UPDATE res_booking SET seating_id = 'L1' WHERE org_id = ? AND seating_id = 'L2'`, [org_id]);
+      await conn.query(`UPDATE res_booking SET seating_id = 'D1' WHERE org_id = ? AND seating_id IN ('D2','D3')`, [org_id]);
+      await conn.query(`UPDATE res_closure SET seating_id = 'L1' WHERE org_id = ? AND seating_id = 'L2'`, [org_id]).catch(() => {});
+      await conn.query(`UPDATE res_closure SET seating_id = 'D1' WHERE org_id = ? AND seating_id IN ('D2','D3')`, [org_id]).catch(() => {});
+    }
+    await conn.query(`UPDATE res_seating SET end_time = start_time WHERE org_id = ? AND end_time IS NULL`, [org_id]);
+    await conn.query(`UPDATE res_table SET joinable = 'N' WHERE org_id = ? AND table_row = 'A'`, [org_id]);
+    await conn.query(`UPDATE res_booking SET duration_min = ? WHERE org_id = ? AND duration_min IS NULL`, [dur, org_id]);
+    const [live] = await conn.query(`SELECT booking_id, booking_date, start_time, duration_min, table_ids FROM res_booking WHERE org_id = ? AND status IN ('C','A','N')`, [org_id]);
+    for (const b of live) {
+      const [h, m] = b.start_time.split(":").map(Number);
+      for (const t of String(b.table_ids || "").split(",").filter(Boolean)) {
+        for (let x = h * 60 + m; x < h * 60 + m + b.duration_min; x += 15) {
+          const slot = `${String(Math.floor(x / 60)).padStart(2, "0")}:${String(x % 60).padStart(2, "0")}`;
+          await conn.query(`INSERT IGNORE INTO res_booking_slot (org_id, booking_date, slot_time, table_id, booking_id) VALUES (?, ?, ?, ?, ?)`, [org_id, b.booking_date, slot, t, b.booking_id]);
+        }
+      }
+    }
+    resConv++;
+  }
+  console.log(`012_reservation_slots: ${resConv ? "sessions every 30 minutes, A tables not joinable, bookings moved" : "OK"}`);
+
+  // 013: Veg / Non-Veg / Combo plans (once, when plan_type is first added): the three original plans become Combo plans,
+  // Veg and Non-Veg plans of 5 / 10 / 15 meals are added at 25% off the regular dish prices (as on the price sheet)
+  let mealSeeded = 0;
+  if (!hadPlanType) {
+    for (const { org_id } of orgs) {
+      const [[{ n }]] = await conn.query(`SELECT COUNT(*) AS n FROM sub_settings WHERE org_id = ?`, [org_id]);
+      if (!n) continue;
+      for (const [id, oldName, newName] of [["STARTER", "Starter Plan", "Combo 5"], ["FAMILY", "Family Plan", "Combo 10"], ["VALUE", "Value Plan", "Combo 15"]]) {
+        const [r] = await conn.query(`UPDATE sub_plan SET plan_name = ?, plan_type = 'C' WHERE org_id = ? AND plan_id = ? AND plan_name = ?`, [newName, org_id, id, oldName]);
+        mealSeeded += r.affectedRows;
+      }
+      const add = [["VEG5", "Veg 5", "V", 5, 11], ["VEG10", "Veg 10", "V", 10, 12], ["VEG15", "Veg 15", "V", 15, 13],
+        ["NV5", "Non-Veg 5", "N", 5, 21], ["NV10", "Non-Veg 10", "N", 10, 22], ["NV15", "Non-Veg 15", "N", 15, 23]];
+      for (const [id, name, type, meals, sort] of add) {
+        const [r] = await conn.query(`INSERT IGNORE INTO sub_plan (org_id, plan_id, plan_name, plan_type, meals_per_week, price, discount_pct, sort_order, status, created_by, created_date)
+                                      VALUES (?, ?, ?, ?, ?, 0, 25, ?, 'A', 'migration', NOW())`, [org_id, id, name, type, meals, sort]);
+        mealSeeded += r.affectedRows;
+      }
+      await conn.query(`UPDATE sub_plan SET sort_order = sort_order + 30 WHERE org_id = ? AND plan_type = 'C' AND sort_order < 30`, [org_id]);
+    }
+  }
+  console.log(`013_meal_pricing: ${mealSeeded ? "Veg / Non-Veg plans added, original plans are now Combo plans" : "OK"}`);
 
   await conn.end();
 })().catch((e) => {

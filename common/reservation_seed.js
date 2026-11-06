@@ -6,7 +6,7 @@
 // pos_x / pos_y = centre of the table as % of the floor width / height; width / height also in %.
 // orient: H = chairs above and below, V = chairs left and right.
 const T = (table_id, seats, pos_x, pos_y, width, height, orient, sort_order) =>
-  ({ table_id, table_row: table_id[0], seats, pos_x, pos_y, width, height, orient, online: 'Y', status: 'A', sort_order });
+  ({ table_id, table_row: table_id[0], seats, pos_x, pos_y, width, height, orient, online: 'Y', joinable: table_id[0] === 'A' ? 'N' : 'Y', status: 'A', sort_order });
 
 const TABLE_SEED = [
   // A row - booths along the top wall
@@ -33,12 +33,10 @@ const TABLE_SEED = [
   T('C3', 4, 31.3, 89, 7, 6.5, 'H', 33),
 ];
 
+// Sessions: bookable start times every interval_min from start_time to end_time (last start)
 const SEATING_SEED = [
-  { seating_id: 'L1', label: 'Lunch', start_time: '11:30', weekdays: '0123456', sort_order: 1, status: 'A' },
-  { seating_id: 'L2', label: 'Lunch', start_time: '13:00', weekdays: '0123456', sort_order: 2, status: 'A' },
-  { seating_id: 'D1', label: 'Dinner', start_time: '17:30', weekdays: '0123456', sort_order: 3, status: 'A' },
-  { seating_id: 'D2', label: 'Dinner', start_time: '19:00', weekdays: '0123456', sort_order: 4, status: 'A' },
-  { seating_id: 'D3', label: 'Dinner', start_time: '20:30', weekdays: '0123456', sort_order: 5, status: 'A' },
+  { seating_id: 'L1', label: 'Lunch', start_time: '11:00', end_time: '14:30', interval_min: 30, weekdays: '0123456', sort_order: 1, status: 'A' },
+  { seating_id: 'D1', label: 'Dinner', start_time: '17:00', end_time: '21:30', interval_min: 30, weekdays: '0123456', sort_order: 2, status: 'A' },
 ];
 
 const SETTINGS_SEED = {

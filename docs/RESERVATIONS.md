@@ -3,14 +3,18 @@
 Real-time table booking for the Montreal dining room. Public page, staff screens and e-mails, in the same app and database.
 
 ## Rules
-- **Fixed seatings** (defaults: Lunch 11:30, 13:00 · Dinner 17:30, 19:00, 20:30). Each seating is booked separately.
-- **Reservable chairs per seating: 40** (of the room's chairs; the rest are for walk-ins). The limit counts the **chairs of the
-  booked tables** (3 guests on a 4-table use 4) and **staff blocks** too. At 40, that seating closes online and staff
-  cannot add more either. Change the number in Reservation setup.
-- A booking can hold **several tables** (most tables have 4 chairs); staff push them together. Online, every chosen table must be
-  needed (no spare tables) and groups above 12 (setting) are asked to call.
-- **No double booking**: one row per table per seating in `res_booking_table` (primary key), and every booking change locks the
-  `res_settings` row, so two people can never both take the last seats or the same table (tested with simultaneous bookings).
+- **Sessions with start times** (defaults: Lunch 11:00-14:30 and Dinner 17:00-21:30, a start time every 30 minutes, so the
+  last guests sit down by 15:00 / 22:00). First start, last start and interval (15/30/45/60) are set per session in
+  Reservation setup → Sessions & times.
+- **Table time 90 minutes** (setting): a 19:00 booking holds its tables until 20:30; the tables are free again for a later start.
+  Stored per 15-minute step in `res_booking_slot` (primary key = table + date + step), so a table can never be double booked.
+- **Reservable chairs at any time: 40** (rest for walk-ins). Counted every 15 minutes over the booking's table time: chairs of
+  the booked tables (3 guests on a 4-table use 4), staff blocks, and guests of bookings still waiting for tables.
+- **A-series booths cannot be joined** (table setting "Can be joined" = No; A1-A6 seeded so). A booth is booked alone, up to
+  its 4 chairs. Groups above 4 are offered B and C tables only.
+- **Request without tables**: when the time still has room under the 40 but no free combination of tables fits the group, the
+  customer can still book the time ("We seat you"); the booking shows **Tables to allocate** for staff.
+- Groups above 12 (setting) are asked to call. Every booking change locks the `res_settings` row (no race on the last seats).
 - Customers can cancel online until 60 minutes before (setting); staff can change, move or cancel any time.
 
 ## Customer side (public, no login) - `/v1/reserve`
@@ -24,9 +28,9 @@ Later, on thanjaigroup.com, link the Reservation menu to `https://pm.thanjaicate
 ## Staff side - menu **Reservations** (Role Master screens RES_BOOKINGS, RES_REPORTS, RES_SETUP)
 | Screen | What it does |
 |---|---|
-| Floor plan & bookings | Date + seating tabs with reserved/40, walk-in chairs, guests. Floor plan with names. Click free tables → **Book** (phone / walk-up) or **Block** (staff hold, counts in the 40). Booking menu: Arrived, No-show, Change (date / time / tables / details), Cancel (optional e-mail). Search by name / phone / e-mail / number. |
-| Reports & print | **Reservation status**: summary of every seating, then per seating the floor plan with names and every table's status. **Bookings by customer**: who, guests, which tables, phone, request. Print or PDF (A4 landscape, for the board). |
-| Reservation setup | Limits & contact (40, max online group, days ahead, cut-offs, restaurant e-mail, guest notes, pause online booking), seatings (time, days), tables (chairs, position on plan, online yes/no, in use), closed dates (whole day or one seating). |
+| Floor plan & bookings | Date + session tabs, then a chip per start time with reserved/40; the floor plan shows the tables taken at that time (with names). **Tables to allocate**: bookings without tables are listed in orange - *Allocate tables* → click free tables → *Allocate & e-mail guest* (the guest gets a "Your table" e-mail with the table numbers). Click free tables → **Book** (phone / walk-up) or **Block** (staff hold, counts in the 40). Booking menu: Arrived, No-show, Change (date / time / tables / details), Cancel (optional e-mail). Search by name / phone / e-mail / number. |
+| Reports & print | **Reservation status**: per session a by-time table (reserved / can still book / walk-ins / arriving) and a **table timeline** (who holds which table when). **Bookings by customer**: who, guests, which tables, phone, request. Print or PDF (A4 landscape, for the board). |
+| Reservation setup | Limits & contact (40, max online group, days ahead, cut-offs, restaurant e-mail, guest notes, pause online booking), sessions (first / last start, interval, days), table time, tables (chairs, can be joined, position on plan, online yes/no, in use), closed dates (whole day or one seating). |
 
 The migration gives these screens to the Operations Manager role (all three) and the Branch role (bookings + reports).
 Adjust in Master → Role.
@@ -39,7 +43,7 @@ Seeded from the hand-drawn plan: A1–A6 (booths, top wall), B1–B4, B6–B11 (
 ## E-mails
 On every booking: confirmation to the customer (with "View or cancel" link) + copy to the restaurant e-mail
 (`thanjairestaurant@gmail.com`, editable in setup). On cancellation: customer, and the restaurant when the customer cancelled.
-Staff bookings e-mail only if an e-mail is entered and the box is ticked.
+Staff bookings e-mail only if an e-mail is entered and the box is ticked. Allocating tables to a request e-mails the guest the table numbers. Requests without tables are flagged "TABLES TO ALLOCATE" in the restaurant copy.
 
 Settings in `.env` (server). Without `SMTP_HOST` nothing is sent - bookings still work and each e-mail is written to the server log.
 
@@ -57,7 +61,9 @@ PUBLIC_APP_URL=https://pm.thanjaicaterers.com/v1
 
 ## Database
 Migration `011_reservations` (in `migrations/run.js`, safe to run again): `res_settings`, `res_seating`, `res_table`,
-`res_closure`, `res_booking`, `res_booking_table`, plus default settings, seatings, the 19 tables and role screens.
+`res_closure`, `res_booking`, plus default settings, seatings, the 19 tables and role screens. Migration `012_reservation_slots`:
+session start/end/interval, `res_table.joinable` (A1-A6 = N), `res_booking.start_time / duration_min`, `res_booking_slot`
+(replaces `res_booking_table`; existing bookings are converted), old fixed seatings become the Lunch / Dinner sessions.
 Booking numbers `RS000001…` use `vts_seq_generator` (type `RESV`).
 
 ## API

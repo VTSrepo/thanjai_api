@@ -42,7 +42,7 @@ TRUNCATE TABLE sub_menu_week;
 UPDATE vts_seq_generator SET last_seq_no = 0 WHERE seq_type IN ('SUBC', 'SUBS', 'SUBO');
 
 -- table reservations: test bookings (tables, seatings, limits and closed dates are kept)
-TRUNCATE TABLE res_booking_table;
+TRUNCATE TABLE res_booking_slot;
 TRUNCATE TABLE res_booking;
 UPDATE vts_seq_generator SET last_seq_no = 0 WHERE seq_type = 'RESV';
 

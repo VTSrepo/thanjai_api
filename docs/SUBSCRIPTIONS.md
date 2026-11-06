@@ -15,10 +15,20 @@ Subscribers have their own accounts (`sub_customer`, e-mail + password). Their l
 ## Staff side – menu **Online** (Role Master screens SUB_ORDERS, SUB_SETUP, SUB_CUSTOMERS)
 | Screen | What it does |
 |---|---|
-| Shop setup | Plans (seeded: Starter 5 / $64.99, Family 10 / $119.99, Value 15 / $169.99), delivery zones by postal-code start + fee, settings (delivery day, cutoff, tax, hub branch) |
-| Weekly menu | Per delivery date: add dishes, mark chef's picks, set cutoff, publish. Dish description / diet / allergens / photo link |
+| Shop setup | **Plans** (type Veg / Non-Veg / Combo, meals a week, plan discount %, premium dishes allowed, per-dish discounts), **Dish prices** (regular price, curry or combo meal, premium flag; *Import from Excel* reads the Veg / Non-Veg price sheet and can set the plan discount), delivery zones by postal-code start + fee, settings (delivery day, cutoff, tax, hub branch) |
+| Weekly menu | Per delivery date: add dishes, mark chef's picks, set cutoff, publish (every dish needs a price). Dish description / diet / kind / price / premium / allergens / photo link |
 | Online orders | Per delivery: totals, kitchen totals per dish, **Run cutoff**, **Send to kitchen**, mark delivered, retry card / mark paid, packing slips + route sheet PDF |
 | Subscribers | List with plan, status, paid orders, total paid; detail with orders and payments |
+
+## Plans and pricing
+- **Veg** plans offer veg curries, **Non-Veg** plans non-veg and egg curries, **Combo** plans the combo meals (biryani, curry +
+  naan, ...). Seeded: Veg 5/10/15 and Non-Veg 5/10/15 at 25% off; the old Starter / Family / Value plans became Combo 5/10/15.
+- Price of a week = **sum of the chosen dishes**, each at its regular price minus the plan discount (or the dish's own discount
+  in that plan). Delivery, GST and QST are added. Customers see "Starting from $X" (cheapest dishes) and a running total.
+- **Premium (costly) dishes**: mark a dish as costly; each plan sets how many may be chosen per week (e.g. 2 of 5). The
+  customer cannot add more, and the server refuses it too. Chef's picks respect the plan type and the limit.
+- Unpaid weeks are re-priced at cutoff with the current prices. A paid week can only be changed to a total that is equal or
+  lower.
 
 ## Weekly cycle
 1. Staff publish the menu for a delivery date (cutoff defaults to 3 days before, 23:59).
@@ -33,7 +43,7 @@ Subscribers have their own accounts (`sub_customer`, e-mail + password). Their l
 - Refunds: from the Stripe dashboard (cancelling an order in the app does not refund).
 
 ## Database
-Migration `009_subscriptions` (in `migrations/run.js`): `sub_settings`, `sub_plan`, `sub_zone`, `sub_menu_week`, `sub_menu_item`, `sub_customer`, `sub_subscription`, `sub_order`, `sub_order_item`, `sub_payment`, plus `product_master.sub_description / sub_diet / sub_allergens / sub_image_url`.
+Migration `009_subscriptions` (in `migrations/run.js`): `sub_settings`, `sub_plan`, `sub_zone`, `sub_menu_week`, `sub_menu_item`, `sub_customer`, `sub_subscription`, `sub_order`, `sub_order_item`, `sub_payment`, plus `product_master.sub_description / sub_diet / sub_allergens / sub_image_url`. Migration `013_meal_pricing`: `sub_plan.plan_type / discount_pct / max_costly`, `product_master.sub_price / sub_kind / sub_costly`, `sub_order_item.unit_price`, `sub_plan_discount` (per-dish discount per plan).
 
 ## Not yet included
 E-mails (notifications are written to the server log until an e-mail provider is chosen), forgot-password, discount codes, one-time (non-subscription) orders, photo upload (photo is a link).
