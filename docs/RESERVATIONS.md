@@ -12,8 +12,9 @@ Real-time table booking for the Montreal dining room. Public page, staff screens
   the booked tables (3 guests on a 4-table use 4), staff blocks, and guests of bookings still waiting for tables.
 - **A-series booths cannot be joined** (table setting "Can be joined" = No; A1-A6 seeded so). A booth is booked alone, up to
   its 4 chairs. Groups above 4 are offered B and C tables only.
-- **Request without tables**: when the time still has room under the 40 but no free combination of tables fits the group, the
-  customer can still book the time ("We seat you"); the booking shows **Tables to allocate** for staff.
+- **Choosing tables is optional online**: the guest can book a time without picking tables (if the time has room under the 40);
+  the booking shows **Tables to allocate** for staff, who allocate tables and the guest is e-mailed the table numbers.
+  "Choose the best table for me" picks tables only when the guest clicks it.
 - Groups above 12 (setting) are asked to call. Every booking change locks the `res_settings` row (no race on the last seats).
 - Customers can cancel online until 60 minutes before (setting); staff can change, move or cancel any time.
 
