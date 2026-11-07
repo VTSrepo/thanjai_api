@@ -20,7 +20,7 @@ Real-time table booking for the Montreal dining room. Public page, staff screens
 ## Customer side (public, no login) - `/v1/reserve`
 | Page | What it does |
 |---|---|
-| `/reserve` | Date → guests → time grid (free / few seats left / full / closed) → floor plan (choose tables; best tables pre-picked) → details → Reserve. Refreshes every 30 s. |
+| `/reserve` | Date → guests → time grid (free / few seats left / full / closed) → floor plan (guest taps tables, or "Choose the best table for me") → details → Reserve. Refreshes every 30 s. |
 | `/reserve/booking/<code>` | Confirmation; the link in the e-mail opens it to view or cancel. |
 
 Later, on thanjaigroup.com, link the Reservation menu to `https://pm.thanjaicaterers.com/v1/reserve`.
