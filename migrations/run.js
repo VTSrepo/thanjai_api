@@ -811,6 +811,8 @@ const MIGRATIONS = [
   }
   console.log(`013_meal_pricing: ${mealSeeded ? "Veg / Non-Veg plans added, original plans are now Combo plans" : "OK"}`);
 
+  const [dd] = await conn.query(`SELECT COUNT(*) AS n FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'product_master' AND COLUMN_NAME = 'sub_discount_pct'`);
+  console.log(`014_dish_discount: ${dd[0].n ? "OK" : "MISSING"}`);
   await conn.end();
 })().catch((e) => {
   console.error("Migration failed:", e.message);

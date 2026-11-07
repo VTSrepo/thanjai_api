@@ -35,6 +35,12 @@ Subscribers have their own accounts (`sub_customer`, e-mail + password). Their l
 - Delivery, GST and QST are added. Unpaid weeks are re-priced at cutoff with the current prices. A paid Combo week can only be
   changed to an equal or lower total (Veg / Non-Veg weeks can always be changed - same price).
 
+## Staff home
+Roles with Online orders / Shop setup / Subscribers see tiles on the Admin / Ops (and Branch) home, refreshed every 2 minutes:
+*Online menu* (next week published? red when not published within 3 days of its cutoff), *Online orders* (orders and meals for
+the open week; red when a cutoff is due or payments failed, amber when a week waits to go to the kitchen or be marked delivered)
+and *Online shop setup* (plans without a weekly price, online dishes without price / diet). API: `GET /sub/summary/:org`.
+
 ## Weekly cycle
 1. Staff publish the menu for a delivery date (cutoff defaults to 3 days before, 23:59).
 2. Customers pick meals until the cutoff; new customers pay at checkout (card saved).

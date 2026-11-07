@@ -360,6 +360,7 @@ api("post", "/sub/dish", ["SUB_SETUP:E"], wrap((req) => subscriptionModule.saveD
 api("post", "/sub/dishes/pricing", ["SUB_SETUP:E"], wrap((req) => subscriptionModule.saveDishPricing(req.user, req.body || {}), "Dish pricing"));
 api("post", "/sub/plans/defaults", ["SUB_SETUP:E"], wrap((req) => subscriptionModule.savePlanDefaults(req.user, req.body || {}), "Plan default discounts"));
 api("post", "/sub/dishes/import", ["SUB_SETUP:E"], wrap((req) => subscriptionModule.importDishPrices(req.user, req.body || {}), "Import dish prices"));
+api("get", "/sub/summary/:org_id", ["SUB_ORDERS", "SUB_SETUP", "SUB_CUSTOMERS"], wrap((req) => subscriptionModule.summary(req.user.org_id), "Online summary"));
 api("get", "/sub/weeks/:org_id", ["SUB_SETUP", "SUB_ORDERS"], wrap((req) => subscriptionModule.listWeeks(req.user.org_id), "Menu weeks"));
 api("get", "/sub/week/:org_id/:date", ["SUB_SETUP", "SUB_ORDERS"], wrap((req) => subscriptionModule.getWeek(req.user.org_id, req.params.date), "Menu week"));
 api("post", "/sub/week", ["SUB_SETUP:E"], wrap((req) => subscriptionModule.saveWeek(req.user, req.body || {}), "Save menu week"));
