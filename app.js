@@ -379,6 +379,7 @@ app.get("/rsv/booking/:token", wrap((req) => reservationModule.getByToken(req.pa
 app.post("/rsv/booking/:token/cancel", wrap((req) => reservationModule.cancelByToken(req.params.token), "Reservation cancel"));
 // staff
 api("get", "/res/day/:org_id", ["RES_BOOKINGS", "RES_REPORTS"], wrap((req) => reservationModule.day(req.user.org_id, req.query.date), "Reservations day"));
+api("get", "/res/summary/:org_id", ["RES_BOOKINGS", "RES_REPORTS"], wrap((req) => reservationModule.summary(req.user.org_id), "Reservation summary"));
 api("get", "/res/search/:org_id", ["RES_BOOKINGS", "RES_REPORTS"], wrap((req) => reservationModule.search(req.user.org_id, req.query.q), "Reservation search"));
 api("post", "/res/booking", ["RES_BOOKINGS:E"], wrap((req) => reservationModule.staffCreate(req.user, req.body || {}), "Staff reservation"));
 api("post", "/res/booking/update", ["RES_BOOKINGS:E"], wrap((req) => reservationModule.staffUpdate(req.user, req.body || {}), "Change reservation"));

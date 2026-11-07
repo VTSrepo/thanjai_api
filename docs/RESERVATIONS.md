@@ -33,6 +33,11 @@ Later, on thanjaigroup.com, link the Reservation menu to `https://pm.thanjaicate
 | Reports & print | **Reservation status**: per session a by-time table (reserved / can still book / walk-ins / arriving) and a **table timeline** (who holds which table when). **Bookings by customer**: who, guests, which tables, phone, request. Print or PDF (A4 landscape, for the board). |
 | Reservation setup | Limits & contact (40, max online group, days ahead, cut-offs, restaurant e-mail, guest notes, pause online booking), sessions (first / last start, interval, days), table time, tables (chairs, can be joined, position on plan, online yes/no, in use), closed dates (whole day or one seating). |
 
+**Staff home (Admin / Ops home, and the Branch home for roles with Reservations access)** shows two tiles, refreshed every minute:
+*Reservations today* (bookings, guests, arrived; red when a guest is 15+ minutes late and not marked arrived / no-show, amber when online
+booking is paused or a start time is full) and *Tables to allocate* (bookings waiting for tables; red if any are today or tomorrow).
+Click a tile to open Reservations on that date. API: `GET /res/summary/:org`.
+
 The migration gives these screens to the Operations Manager role (all three) and the Branch role (bookings + reports).
 Adjust in Master → Role.
 
