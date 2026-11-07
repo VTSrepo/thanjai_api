@@ -600,6 +600,12 @@ const MIGRATIONS = [
     table: "sub_order_item",
     columns: [["unit_price", "DECIMAL(10,2) NULL AFTER qty"]],               // price per meal charged (after discount)
   },
+  {
+    // a dish's own discount in Veg / Non-Veg plans (NULL = the plan's default discount)
+    id: "014_dish_discount",
+    table: "product_master",
+    columns: [["sub_discount_pct", "DECIMAL(5,2) NULL AFTER sub_costly"]],
+  },
 ];
 
 (async () => {

@@ -21,14 +21,18 @@ Subscribers have their own accounts (`sub_customer`, e-mail + password). Their l
 | Subscribers | List with plan, status, paid orders, total paid; detail with orders and payments |
 
 ## Plans and pricing
-- **Veg** plans offer veg curries, **Non-Veg** plans non-veg and egg curries, **Combo** plans the combo meals (biryani, curry +
-  naan, ...). Seeded: Veg 5/10/15 and Non-Veg 5/10/15 at 25% off; the old Starter / Family / Value plans became Combo 5/10/15.
-- Price of a week = **sum of the chosen dishes**, each at its regular price minus the plan discount (or the dish's own discount
-  in that plan). Delivery, GST and QST are added. Customers see "Starting from $X" (cheapest dishes) and a running total.
-- **Premium (costly) dishes**: mark a dish as costly; each plan sets how many may be chosen per week (e.g. 2 of 5). The
-  customer cannot add more, and the server refuses it too. Chef's picks respect the plan type and the limit.
-- Unpaid weeks are re-priced at cutoff with the current prices. A paid week can only be changed to a total that is equal or
-  lower.
+- **Veg** plans offer veg dishes, **Non-Veg** plans non-veg and egg dishes, **Combo** plans any dish - the customer mixes veg and
+  non-veg. Seeded: Veg 5/10/15 and Non-Veg 5/10/15 at 25% off; the old Starter / Family / Value plans became Combo 5/10/15.
+- **Shop setup → Dish prices** lists every product from Product Master: switch **Online** on, set the diet, the **regular price**
+  of one meal, an optional **own discount**, and **Costly**. Changes save as you go. *Import prices from Excel* is optional
+  (fills prices from the Veg / Non Veg price sheet).
+- **Default discount** (top of Dish prices): one % for all Veg plans and one for all Non-Veg plans.
+- Price of one meal: Veg / Non-Veg plans = regular price less (the dish's discount in that plan, else the dish's own discount,
+  else the plan's default). Combo plans = regular price (unless the plan itself has a discount). Week price = sum of the chosen
+  dishes; delivery, GST and QST are added. Customers see "Starting from $X" and a running total.
+- **Costly dishes**: each plan sets how many may be chosen per week (e.g. 2 of 5); customers see them as "Premium". The
+  customer cannot add more and the server refuses it too. Chef's picks respect the plan type and the limit.
+- Unpaid weeks are re-priced at cutoff with the current prices. A paid week can only be changed to an equal or lower total.
 
 ## Weekly cycle
 1. Staff publish the menu for a delivery date (cutoff defaults to 3 days before, 23:59).
@@ -43,7 +47,7 @@ Subscribers have their own accounts (`sub_customer`, e-mail + password). Their l
 - Refunds: from the Stripe dashboard (cancelling an order in the app does not refund).
 
 ## Database
-Migration `009_subscriptions` (in `migrations/run.js`): `sub_settings`, `sub_plan`, `sub_zone`, `sub_menu_week`, `sub_menu_item`, `sub_customer`, `sub_subscription`, `sub_order`, `sub_order_item`, `sub_payment`, plus `product_master.sub_description / sub_diet / sub_allergens / sub_image_url`. Migration `013_meal_pricing`: `sub_plan.plan_type / discount_pct / max_costly`, `product_master.sub_price / sub_kind / sub_costly`, `sub_order_item.unit_price`, `sub_plan_discount` (per-dish discount per plan).
+Migration `009_subscriptions` (in `migrations/run.js`): `sub_settings`, `sub_plan`, `sub_zone`, `sub_menu_week`, `sub_menu_item`, `sub_customer`, `sub_subscription`, `sub_order`, `sub_order_item`, `sub_payment`, plus `product_master.sub_description / sub_diet / sub_allergens / sub_image_url`. Migration `013_meal_pricing`: `sub_plan.plan_type / discount_pct / max_costly`, `product_master.sub_price / sub_kind / sub_costly`, `sub_order_item.unit_price`, `sub_plan_discount` (per-dish discount per plan). Migration `014_dish_discount`: `product_master.sub_discount_pct` (a dish's own discount).
 
 ## Not yet included
 E-mails (notifications are written to the server log until an e-mail provider is chosen), forgot-password, discount codes, one-time (non-subscription) orders, photo upload (photo is a link).
