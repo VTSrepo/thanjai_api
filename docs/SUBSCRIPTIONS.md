@@ -21,18 +21,19 @@ Subscribers have their own accounts (`sub_customer`, e-mail + password). Their l
 | Subscribers | List with plan, status, paid orders, total paid; detail with orders and payments |
 
 ## Plans and pricing
-- **Veg** plans offer veg dishes, **Non-Veg** plans non-veg and egg dishes, **Combo** plans any dish - the customer mixes veg and
-  non-veg. Seeded: Veg 5/10/15 and Non-Veg 5/10/15 at 25% off; the old Starter / Family / Value plans became Combo 5/10/15.
+- **Veg** plans offer veg dishes, **Non-Veg** plans non-veg and egg dishes, **Combo** plans any dish - the customer mixes veg and non-veg.
+- **Veg / Non-Veg plans have a fixed weekly price** set by the restaurant (Shop setup → Plans → Weekly price, e.g. Veg 5 = $50).
+  The customer picks any dishes of that kind; the price does not change with the dishes. A Veg / Non-Veg plan without a weekly
+  price is hidden from customers.
+- **Combo plans** = sum of the chosen dishes at regular price less a discount: the dish's discount in that plan if set, else the
+  dish's own discount, else the plan's discount (**Combo default discount** at the top of Dish prices sets it for all Combo plans).
 - **Shop setup → Dish prices** lists every product from Product Master: switch **Online** on, set the diet, the **regular price**
-  of one meal, an optional **own discount**, and **Costly**. Changes save as you go. *Import prices from Excel* is optional
-  (fills prices from the Veg / Non Veg price sheet).
-- **Default discount** (top of Dish prices): one % for all Veg plans and one for all Non-Veg plans.
-- Price of one meal: Veg / Non-Veg plans = regular price less (the dish's discount in that plan, else the dish's own discount,
-  else the plan's default). Combo plans = regular price (unless the plan itself has a discount). Week price = sum of the chosen
-  dishes; delivery, GST and QST are added. Customers see "Starting from $X" and a running total.
-- **Costly dishes**: each plan sets how many may be chosen per week (e.g. 2 of 5); customers see them as "Premium". The
-  customer cannot add more and the server refuses it too. Chef's picks respect the plan type and the limit.
-- Unpaid weeks are re-priced at cutoff with the current prices. A paid week can only be changed to an equal or lower total.
+  (used by Combo plans; every dish on a published menu needs one), an optional **own discount** (Combo), and **Costly**.
+  Changes save as you go. *Import prices from Excel* is optional.
+- **Costly dishes**: each plan (all types) sets how many may be chosen per week (e.g. 2 of 5); customers see them as "Premium".
+  The customer cannot add more and the server refuses it too. Chef's picks respect the plan type and the limit.
+- Delivery, GST and QST are added. Unpaid weeks are re-priced at cutoff with the current prices. A paid Combo week can only be
+  changed to an equal or lower total (Veg / Non-Veg weeks can always be changed - same price).
 
 ## Weekly cycle
 1. Staff publish the menu for a delivery date (cutoff defaults to 3 days before, 23:59).
