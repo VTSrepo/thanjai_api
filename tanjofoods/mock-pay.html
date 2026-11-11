@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Payment (TEST MODE) – Tanjo Foods</title>
+<meta name="robots" content="noindex">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/styles.css">
+<style>
+  body{background:#f3eee6}
+  .test{background:#7a4b06;color:#fff;text-align:center;font-size:13px;font-weight:600;padding:8px;letter-spacing:.04em}
+  .pay{width:min(940px,94vw);margin:36px auto;display:grid;grid-template-columns:1fr 1fr;gap:0;background:#fff;border-radius:22px;overflow:hidden;box-shadow:var(--shadow-lg)}
+  .pay .l{background:var(--green);color:#fff;padding:34px}
+  .pay .l .li{display:flex;justify-content:space-between;font-size:14px;margin:8px 0;opacity:.9}
+  .pay .l .tot{font-family:var(--serif);font-size:42px;margin:6px 0 22px}
+  .pay .r{padding:34px}
+  .card-ph{background:linear-gradient(135deg,#1f1a17,#3c2a22);color:#fff;border-radius:14px;padding:18px 20px;margin-bottom:20px;font-family:monospace;letter-spacing:.12em}
+  .err-box{background:#fde4e4;color:var(--red);border-radius:10px;padding:10px 12px;font-size:14px;margin-bottom:14px;display:none}
+  @media(max-width:760px){.pay{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="test">TEST MODE – no real payment is taken. This page stands in for the payment gateway (Stripe / Square) until it is integrated.</div>
+<div class="pay" id="pay">
+  <div class="l">
+    <div class="logo-mark" style="color:#fff">Tanjo<i class="leaf"></i></div>
+    <p style="opacity:.75;margin:22px 0 2px">Pay Tanjo Foods</p>
+    <div class="tot" id="tot">…</div>
+    <div id="lines"></div>
+    <p style="opacity:.7;font-size:13px;margin-top:20px" id="ono"></p>
+  </div>
+  <div class="r">
+    <h3 style="font-family:var(--serif);font-size:26px;margin:0 0 16px">Card details</h3>
+    <div class="err-box" id="err"></div>
+    <div class="card-ph"><div style="font-size:12px;opacity:.6;letter-spacing:.2em">TEST CARD</div><div style="font-size:19px;margin:10px 0">4242 4242 4242 4242</div><div style="font-size:12px;opacity:.7">12 / 30 · CVC 123</div></div>
+    <div class="field"><label>Name on card</label><input id="nm" autocomplete="off"></div>
+    <div class="grid2"><div class="field"><label>Card number</label><input value="4242 4242 4242 4242" readonly></div><div class="field"><label>Expiry / CVC</label><input value="12/30 · 123" readonly></div></div>
+    <button class="btn btn-primary" id="payBtn" style="width:100%;padding:15px">Pay</button>
+    <button class="btn btn-ghost" id="declineBtn" style="width:100%;margin-top:10px">Simulate a declined card</button>
+    <p style="text-align:center;margin-top:16px"><a href="./#/shop" style="font-size:14px;color:var(--muted)">Cancel and return to the shop</a></p>
+  </div>
+</div>
+<script>
+(async function(){
+  const p = new URLSearchParams(location.search), no = p.get("order"), t = p.get("t");
+  const $ = id => document.getElementById(id);
+  const money = n => new Intl.NumberFormat("en-CA",{style:"currency",currency:"CAD"}).format(n);
+  const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+  const fail = m => { $("err").textContent = m; $("err").style.display = "block"; };
+  let o;
+  try {
+    const r = await fetch(`api/orders/${encodeURIComponent(no)}?t=${encodeURIComponent(t)}`);
+    if (!r.ok) throw new Error();
+    o = await r.json();
+  } catch (e) { $("pay").innerHTML = `<div style="padding:40px">Order not found.</div>`; return; }
+  if (o.payment_status === "PAID") { location.href = `./#/order/${encodeURIComponent(no)}?t=${t}`; return; }
+  $("tot").textContent = money(o.grand_total);
+  $("ono").textContent = "Order " + o.order_no;
+  $("nm").value = o.name;
+  $("payBtn").textContent = "Pay " + money(o.grand_total);
+  $("lines").innerHTML = o.items.map(i => `<div class="li"><span>${i.qty} × ${esc(i.product_name)}</span><span>${money(i.line_total)}</span></div>`).join("") +
+    `<div class="li" style="border-top:1px solid rgba(255,255,255,.2);padding-top:8px"><span>Delivery</span><span>${money(o.delivery_fee)}</span></div>` +
+    `<div class="li"><span>GST + QST</span><span>${money(o.gst + o.qst)}</span></div>`;
+  async function go(outcome){
+    $("err").style.display = "none";
+    $("payBtn").disabled = $("declineBtn").disabled = true;
+    $("payBtn").textContent = "Processing…";
+    try {
+      const r = await fetch(`api/payments/mock/${encodeURIComponent(no)}`, {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({t,outcome})});
+      const j = await r.json();
+      if (!r.ok) throw new Error(j.error || "Payment failed");
+      if (j.paid) { location.href = j.redirect; return; }
+      fail("Your card was declined (test). Try again or use a different card.");
+    } catch (e) { fail(e.message); }
+    $("payBtn").disabled = $("declineBtn").disabled = false;
+    $("payBtn").textContent = "Pay " + money(o.grand_total);
+  }
+  $("payBtn").onclick = () => go("success");
+  $("declineBtn").onclick = () => go("decline");
+})();
+</script>
+</body>
+</html>

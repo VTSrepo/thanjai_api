@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f6c167"/><stop offset="1" stop-color="#d98a23"/>
+    </linearGradient>
+    <pattern id="bg" width="24" height="24" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <rect width="24" height="24" fill="#fbf3e4"/><rect width="12" height="24" fill="#f8ecd6"/>
+    </pattern>
+  </defs>
+  <rect width="600" height="600" fill="url(#bg)"/>
+  <ellipse cx="300" cy="430" rx="210" ry="34" fill="#e9dcc4"/>
+  <g transform="translate(300 300)">
+    <path d="M-170 120 L0 -170 L170 120 Q0 160 -170 120Z" fill="url(#g)" stroke="#b86b14" stroke-width="6" stroke-linejoin="round"/>
+    <path d="M-60 -30 Q0 -60 40 -10" fill="none" stroke="#b86b14" stroke-width="5" stroke-linecap="round" opacity=".55"/>
+    <path d="M-110 70 Q-20 40 60 80" fill="none" stroke="#b86b14" stroke-width="5" stroke-linecap="round" opacity=".45"/>
+    <circle cx="-30" cy="20" r="5" fill="#fff3d9"/><circle cx="50" cy="40" r="4" fill="#fff3d9"/><circle cx="10" cy="-70" r="4" fill="#fff3d9"/>
+  </g>
+  <rect x="190" y="500" width="220" height="40" rx="20" fill="#fff" stroke="#e8e1d6" stroke-width="2"/>
+  <text x="300" y="526" text-anchor="middle" font-family="Inter,Arial,sans-serif" font-size="17" font-weight="600" fill="#a77a2c">Photo coming soon</text>
+</svg>
