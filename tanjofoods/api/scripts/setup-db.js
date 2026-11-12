@@ -116,7 +116,19 @@ const sqlFile = p => fs.readFileSync(p, "utf8").replace(/\bTanjofoods\b/g, DB); 
   else {
     for (const h of ["localhost", "127.0.0.1"]) {
       const [[{ n }]] = await admin.query("SELECT COUNT(*) n FROM mysql.user WHERE User=? AND Host=?", [appUser, h]);
-      if (!n) await admin.query("CREATE USER ?@? IDENTIFIED BY ?", [appUser, h, appPwd]);
+      if (!n) {
+        try { await admin.query("CREATE USER ?@? IDENTIFIED BY ?", [appUser, h, appPwd]); }
+        catch (e) {
+          if (e.code === "ER_NOT_VALID_PASSWORD") {
+            console.error(`  \u2717 MySQL's password policy rejected the DB password for '${appUser}'.`);
+            console.error("    Use upper + lower case letters, digits and a symbol, e.g. generate one with:");
+            console.error(`      P="Tj-$(openssl rand -hex 10)-Q7@x"; echo $P`);
+            console.error("    put it in the DB password setting (TANJO_DB_PASSWORD / DB_PASSWORD) and run setup-db again.");
+            process.exit(1);
+          }
+          throw e;
+        }
+      }
       await admin.query(`GRANT SELECT, INSERT, UPDATE, DELETE ON \`${DB}\`.* TO ?@?`, [appUser, h]);
       if (!n) ok(`Created MySQL user '${appUser}'@'${h}' with access to ${DB} only`);
     }

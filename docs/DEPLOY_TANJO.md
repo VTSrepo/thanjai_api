@@ -22,9 +22,10 @@ Run `push-reservations.bat` in the *Reservation Module* folder (branch `reservat
 ```
 cd ~/code/thanjai_api && git status --short && git fetch origin && git checkout reservations && git pull origin reservations && git log --oneline -1
 npm ci --omit=dev
-node -e "console.log(require('crypto').randomBytes(18).toString('base64url'))"
+P="Tj-$(openssl rand -hex 10)-Q7@x"; echo $P
 ```
-`git status --short` must print nothing before the pull. The last line prints a random password – copy it for the next step.
+`git status --short` must print nothing before the pull. The last line prints a random password that meets MySQL's password
+policy (upper + lower case, digits, symbol) – copy it for the next step.
 
 Add these lines to `~/code/thanjai_api/.env` (`nano .env`, paste at the end, Ctrl+O, Enter, Ctrl+X):
 ```
