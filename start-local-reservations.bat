@@ -27,6 +27,18 @@ set SMTP_USER=thanjairestaurant@gmail.com
 set SMTP_PASS=
 set MAIL_FROM=Thanjai Restaurant ^<thanjairestaurant@gmail.com^>
 
+REM ---- Tanjo Foods shop at /v1/tanjo - its OWN database Tanjofoods (same one as Tanjofoods\api npm start) ----
+REM TANJO_DB_PASSWORD must match DB_PASSWORD in Tanjofoods\api\.env (default ChangeMe_Tanjo2026!)
+set TANJO_DB_HOST=localhost
+set TANJO_DB_NAME=Tanjofoods
+set TANJO_DB_USER=tanjo_app
+set TANJO_DB_PASSWORD=ChangeMe_Tanjo2026!
+set TANJO_DB_ADMIN_USER=%WRITE_DB_USER%
+set TANJO_DB_ADMIN_PASSWORD=%WRITE_DB_PASSWORD%
+set TANJO_PUBLIC_URL=http://localhost:%HOST_PORT%/v1/tanjo
+set TANJO_PAYMENT_MODE=MOCK
+set TANJO_PRODUCT_IMAGE_DIR=%~dp0..\..\Tanjofoods\product-images
+
 echo.
 echo [1/4] Installing packages...
 call npm install --no-audit --no-fund || goto :end
@@ -40,10 +52,15 @@ echo [3/4] Applying database migrations (adds the reservation tables)...
 node migrations\run.js || goto :end
 
 echo.
+echo [3b/4] Tanjo Foods shop database (Tanjofoods) - not fatal if it fails...
+node tanjofoods\api\scripts\setup-db.js
+
+echo.
 echo [4/4] Starting on port %HOST_PORT%...
 echo   Staff app     : http://localhost:%HOST_PORT%/v1/        (menu Reservations; same logins as your local app)
 echo   Booking page  : http://localhost:%HOST_PORT%/v1/reserve
 echo   Weekly meals  : http://localhost:%HOST_PORT%/v1/meals
+echo   Tanjo Foods   : http://localhost:%HOST_PORT%/v1/tanjo/    (admin: /v1/tanjo/admin.html)
 echo   Press Ctrl+C to stop.
 echo.
 node index.js

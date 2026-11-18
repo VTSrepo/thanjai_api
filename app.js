@@ -49,6 +49,14 @@ app.use(cors({
 // React build (served under /v1 by server.js)
 app.use("/", express.static(path.join(__dirname, "client", "build")));
 
+// ---- Tanjo Foods shop -> /v1/tanjo (own site, admin and API; own database "Tanjofoods", TANJO_* settings) ----
+// Loaded defensively: if it cannot start, the restaurant app keeps running.
+try {
+  app.use("/tanjo", require("./tanjofoods/api/app"));
+} catch (e) {
+  console.error("Tanjo Foods shop not loaded:", e.message);
+}
+
 const { A, O, B, K, X } = { A: ROLES.ADMIN, O: ROLES.OPS, B: ROLES.BRANCH, K: ROLES.KITCHEN, X: ROLES.EXTERNAL };
 const ALL = null; // any logged-in user
 

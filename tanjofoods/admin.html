@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tanjo Foods – Admin</title>
+<meta name="robots" content="noindex">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/styles.css">
+<style>
+  body{background:#f6f2ec}
+  .top{background:var(--green);color:#fff;position:sticky;top:0;z-index:20}
+  .top .wrap{display:flex;align-items:center;gap:16px;height:62px}
+  .top .logo-mark{color:#fff;font-size:24px}
+  .tabs{display:flex;gap:4px;margin-left:14px;overflow-x:auto}
+  .tabs button{background:transparent;border:0;color:#fff;opacity:.72;font-weight:600;padding:8px 13px;border-radius:999px;white-space:nowrap}
+  .tabs button.on{opacity:1;background:rgba(255,255,255,.16)}
+  .me{margin-left:auto;display:flex;align-items:center;gap:10px;font-size:14px;white-space:nowrap}
+  .me button{background:rgba(255,255,255,.14);border:0;color:#fff;border-radius:999px;padding:6px 12px;font-size:13px;font-weight:600}
+  .wrap.main{padding:22px 0 70px}
+  h2.pg{font-family:var(--serif);font-size:30px;margin:4px 0 14px;font-weight:600}
+  .kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin:0 0 18px}
+  .kpi{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+  .kpi small{color:var(--muted);font-size:11.5px;text-transform:uppercase;letter-spacing:.08em}
+  .kpi b{display:block;font-size:25px;font-family:var(--serif)}
+  .tools{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center}
+  .tools input,.tools select,.f input,.f select,.f textarea{padding:9px 11px;border:1.5px solid var(--line);border-radius:10px;font:inherit;font-size:14px;background:#fff;color:var(--ink)}
+  .f textarea{min-height:70px;resize:vertical;width:100%}
+  .b{border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:8px 15px;font-weight:600;font-size:13.5px;color:var(--ink)}
+  .b:hover{border-color:var(--green);color:var(--green)}
+  .b.pri{background:var(--green);border-color:var(--green);color:#fff}.b.pri:hover{background:var(--green-2);color:#fff}
+  .b.red:hover{border-color:var(--red);color:var(--red)}
+  .b.sm{padding:5px 10px;font-size:12px}
+  .b[disabled]{opacity:.5;pointer-events:none}
+  table.t{width:100%;border-collapse:collapse;background:#fff;border-radius:14px;overflow:hidden;border:1px solid var(--line);font-size:13.5px}
+  .t th{background:#faf6ef;text-align:left;font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);padding:9px 10px;white-space:nowrap;position:sticky;top:0}
+  .t td{padding:9px 10px;border-top:1px solid #f1ebe2;vertical-align:top}
+  .t td.n,.t th.n{text-align:right;white-space:nowrap}
+  .t tr.click{cursor:pointer}.t tr.click:hover td{background:#fbf8f3}
+  .t tr.tot td{background:#faf6ef;font-weight:700;border-top:2px solid var(--line)}
+  .scroll{overflow:auto;max-height:70vh;border-radius:14px}
+  .pill{display:inline-block;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:700;background:#eee;white-space:nowrap}
+  .s-PENDING,.s-DRAFT,.s-SCHEDULED,.s-IN_PROGRESS{background:#fdf0d9;color:#7a4b06}.s-CONFIRMED,.s-NEW,.s-CURRENT{background:#e1ecff;color:#1d4fb8}
+  .s-PREPARING,.s-READY,.s-OUT_FOR_DELIVERY,.s-COMING_SOON{background:#efe4ff;color:#5b2ab8}
+  .s-COMPLETED,.s-PAID,.s-SUCCEEDED,.s-ACTIVE,.s-REPLIED,.s-INSERT{background:var(--green-soft);color:var(--green)}
+  .s-CANCELLED,.s-FAILED,.s-SPAM,.s-DISCONTINUED,.s-OUT_OF_STOCK{background:#fde4e4;color:var(--red)}
+  .s-UNPAID,.s-HIDDEN,.s-CLOSED,.s-PAST,.s-SKIP{background:#f1ede6;color:#6b625b}.s-UPDATE{background:#e1ecff;color:#1d4fb8}
+  .login{max-width:390px;margin:80px auto;background:#fff;padding:32px;border-radius:18px;box-shadow:var(--shadow)}
+  .grid{display:grid;grid-template-columns:1.4fr 1fr;gap:20px}
+  .box{background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px}
+  .box h4{margin:0 0 12px;font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+  .actions{display:flex;flex-wrap:wrap;gap:8px}
+  .f{display:grid;grid-template-columns:repeat(4,1fr);gap:12px 14px}
+  .f label{display:flex;flex-direction:column;gap:4px;font-size:12.5px;font-weight:600;color:#463e38}
+  .f label.c2{grid-column:span 2}.f label.c4{grid-column:1/-1}
+  .f input,.f select{width:100%}
+  .f .chk{flex-direction:row;align-items:center;gap:8px;padding-top:20px}
+  .f .chk input{width:auto}
+  .thumb{width:44px;height:44px;border-radius:8px;object-fit:contain;background:#faf6ef;border:1px solid var(--line)}
+  .photos{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px}
+  .ph{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#faf6ef;position:relative}
+  .ph img{width:100%;aspect-ratio:1/1;object-fit:contain;background:#fff}
+  .ph .bar{display:flex;gap:4px;padding:6px;justify-content:center}
+  .ph .main{position:absolute;top:6px;left:6px;background:var(--green);color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:999px}
+  .hint{font-size:12.5px;color:var(--muted);line-height:1.5}
+  .hint code{background:#f3eee6;padding:1px 5px;border-radius:4px;font-size:12px}
+  .msg{padding:10px 14px;border-radius:10px;font-size:14px;margin-bottom:12px}
+  .msg.ok{background:var(--green-soft);color:var(--green)}.msg.err{background:#fde4e4;color:var(--red)}
+  .rep-list{display:flex;flex-direction:column;gap:6px}
+  .rep-list button{text-align:left;border:1px solid var(--line);background:#fff;border-radius:12px;padding:11px 13px;font-size:14px}
+  .rep-list button b{display:block}.rep-list button small{color:var(--muted)}
+  .rep-list button.on{border-color:var(--green);background:var(--green-soft)}
+  .rep{display:grid;grid-template-columns:250px 1fr;gap:18px}
+  .modalx{position:fixed;inset:0;background:rgba(20,15,12,.5);display:flex;align-items:flex-start;justify-content:center;padding:40px 16px;z-index:50;overflow:auto}
+  .modalx .in{background:#fff;border-radius:18px;padding:26px;width:min(1000px,100%);box-shadow:var(--shadow-lg)}
+  .toast2{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:11px 20px;border-radius:999px;font-weight:600;font-size:14px;z-index:99;display:none}
+  @media print{.top,.tools,.rep-list,.noprint{display:none!important}.rep{grid-template-columns:1fr}.scroll{max-height:none;overflow:visible}body{background:#fff}}
+  @media(max-width:900px){.kpis{grid-template-columns:1fr 1fr}.grid,.rep{grid-template-columns:1fr}.f{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<div class="top"><div class="wrap"><a href="./" class="logo-mark" style="text-decoration:none" title="Open the shop">Tanjo<i class="leaf"></i></a><span style="opacity:.7">Admin</span>
+  <div class="tabs" id="tabs" hidden>
+    <button data-tab="orders">Orders</button><button data-tab="products">Products</button><button data-tab="reports">Reports</button>
+    <button data-tab="enquiries">Enquiries</button><button data-tab="users">Users</button></div>
+  <div class="me" id="me"></div></div></div>
+<div class="wrap main" id="app"></div>
+<div class="toast2" id="toast"></div>
+<script>
+(function(){
+"use strict";
+const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
+const app = () => $("#app");
+const money = n => n == null || n === "" ? "" : new Intl.NumberFormat("en-CA",{style:"currency",currency:"CAD"}).format(n);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const pill = s => s ? `<span class="pill s-${esc(s)}">${esc(String(s).replace(/_/g," "))}</span>` : "";
+const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; };
+const monthStart = () => today().slice(0,8) + "01";
+let token = ""; try { token = sessionStorage.getItem("tanjo_admin_token") || ""; } catch(e) {}
+let me = null, tab = "orders";
+let tt; const toast = m => { const t = $("#toast"); t.textContent = m; t.style.display = "block"; clearTimeout(tt); tt = setTimeout(() => t.style.display = "none", 2600); };
+
+/* ------------------------------------------------------------ API */
+async function api(path, opt = {}) {
+  const headers = { Authorization: "Bearer " + token, ...(opt.headers || {}) };
+  if (opt.body && !(opt.body instanceof FormData)) { headers["Content-Type"] = "application/json"; opt.body = JSON.stringify(opt.body); }
+  const r = await fetch("api/admin" + path, { ...opt, headers });
+  if (r.status === 401 && path !== "/login") { setToken(""); login("Your session has ended – please sign in again."); throw new Error("401"); }
+  const ct = r.headers.get("content-type") || "";
+  const j = ct.includes("json") ? await r.json() : await r.blob();
+  if (!r.ok) throw new Error(j.error || ("Error " + r.status));
+  return j;
+}
+const setToken = t => { token = t; try { t ? sessionStorage.setItem("tanjo_admin_token", t) : sessionStorage.removeItem("tanjo_admin_token"); } catch(e) {} };
+async function download(path, name) {
+  const blob = await api(path);
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+}
+const guard = fn => async (...a) => { try { await fn(...a); } catch (e) { if (e.message !== "401") toast(e.message); } };
+
+/* ------------------------------------------------------------ LOGIN */
+function login(msg) {
+  $("#tabs").hidden = true; $("#me").innerHTML = "";
+  app().innerHTML = `<div class="login"><h3 style="font-family:var(--serif);font-size:28px;margin:0 0 4px">Sign in</h3>
+    <p class="hint" style="margin:0 0 18px">Tanjo Foods admin</p>
+    ${msg ? `<div class="msg err">${esc(msg)}</div>` : ""}
+    <form id="lf" class="f" style="grid-template-columns:1fr">
+      <label>E-mail<input name="email" type="email" autocomplete="username" required></label>
+      <label>Password<input name="password" type="password" autocomplete="current-password" required></label>
+      <button class="btn btn-green" style="width:100%">Sign in</button></form></div>`;
+  $("#lf").onsubmit = async e => {
+    e.preventDefault();
+    const fd = Object.fromEntries(new FormData(e.target));
+    try { const r = await api("/login", { method: "POST", body: fd }); setToken(r.token); me = r.user; start(); }
+    catch (err) { login(err.message); }
+  };
+}
+async function start() {
+  if (!token) return login();
+  try { me = await api("/me"); } catch (e) { return; }
+  $("#tabs").hidden = false;
+  $("#me").innerHTML = `<span>👤 ${esc(me.full_name)}</span><button id="pwBtn">Password</button><button id="outBtn">Sign out</button>`;
+  $("#outBtn").onclick = guard(async () => { await api("/logout", { method: "POST" }); setToken(""); login(); });
+  $("#pwBtn").onclick = changePassword;
+  go(tab);
+}
+function go(t) { tab = t; $$("#tabs button").forEach(b => b.classList.toggle("on", b.dataset.tab === t)); ({ orders, products, reports, enquiries, users })[t]().catch(e => e.message !== "401" && toast(e.message)); }
+$("#tabs").onclick = e => { const b = e.target.closest("button"); if (b) go(b.dataset.tab); };
+
+function modal(html) {
+  const m = document.createElement("div"); m.className = "modalx"; m.innerHTML = `<div class="in">${html}</div>`;
+  m.onclick = e => { if (e.target === m || e.target.closest("[data-x]")) m.remove(); };
+  document.body.appendChild(m); return m;
+}
+function changePassword() {
+  const m = modal(`<h3 style="margin:0 0 14px">Change my password</h3><form class="f" style="grid-template-columns:1fr;max-width:380px" id="cp">
+    <label>Current password<input type="password" name="current" required></label>
+    <label>New password <span class="hint">(8+ characters, letters and numbers)</span><input type="password" name="password" required></label>
+    <div class="actions"><button class="b pri">Save</button><button type="button" class="b" data-x>Cancel</button></div></form>`);
+  m.querySelector("#cp").onsubmit = guard(async e => { e.preventDefault(); await api("/me/password", { method: "POST", body: Object.fromEntries(new FormData(e.target)) }); m.remove(); toast("Password changed"); });
+}
+
+/* ============================================================ ORDERS */
+let oFilter = "", oQ = "";
+async function orders() {
+  const [s, rows] = await Promise.all([api("/summary"), api(`/orders?status=${encodeURIComponent(oFilter)}&q=${encodeURIComponent(oQ)}`)]);
+  app().innerHTML = `<h2 class="pg">Orders</h2>
+    <div class="kpis"><div class="kpi"><small>Orders today</small><b>${s.orders_today}</b></div><div class="kpi"><small>Sales today</small><b>${money(s.sales_today)}</b></div>
+      <div class="kpi"><small>Due today</small><b>${s.due_today}</b></div><div class="kpi"><small>Open orders</small><b>${s.open_orders}</b></div><div class="kpi"><small>New enquiries</small><b>${s.new_enquiries}</b></div></div>
+    <div class="tools"><input id="q" placeholder="Search order no, name, e-mail, phone" value="${esc(oQ)}" style="flex:1;min-width:220px">
+      <select id="f"><option value="">All statuses</option>${["PENDING","CONFIRMED","PREPARING","READY","OUT_FOR_DELIVERY","COMPLETED","CANCELLED"].map(x=>`<option ${x===oFilter?"selected":""}>${x}</option>`).join("")}</select>
+      <button class="b" id="rf">Refresh</button></div>
+    <table class="t"><thead><tr><th>Order</th><th>Customer</th><th>For</th><th class="n">Items</th><th class="n">Total</th><th>Payment</th><th>Status</th><th>Last updated by</th></tr></thead><tbody>
+    ${rows.map(o => `<tr class="click" data-no="${esc(o.order_no)}"><td><b>${esc(o.order_no)}</b><br><small class="hint">${esc(o.created_at)}</small></td>
+      <td>${esc(o.cust_name)}<br><small class="hint">${esc(o.cust_phone)}</small></td>
+      <td>${o.fulfilment_type === "DELIVERY" ? "🚚 Delivery" : "🛍️ Pickup"}<br><small class="hint">${esc(o.scheduled_date)} ${esc(o.time_slot||"")}</small></td>
+      <td class="n">${o.items}</td><td class="n"><b>${money(o.grand_total)}</b></td>
+      <td>${pill(o.payment_status)}<br><small class="hint">${esc(o.payment_method.replace(/_/g," "))}</small></td><td>${pill(o.status)}</td><td><small>${esc(o.last_by || "—")}</small></td></tr>`).join("") ||
+      `<tr><td colspan="8" style="text-align:center;padding:30px" class="hint">No orders found.</td></tr>`}</tbody></table>`;
+  $("#q").onchange = e => { oQ = e.target.value; orders(); };
+  $("#f").onchange = e => { oFilter = e.target.value; orders(); };
+  $("#rf").onclick = () => orders();
+  $$("tr[data-no]").forEach(tr => tr.onclick = guard(() => orderDetail(tr.dataset.no)));
+}
+async function orderDetail(no) {
+  const d = await api("/orders/" + encodeURIComponent(no)), o = d.order;
+  const next = { PENDING:["CONFIRMED"], CONFIRMED:["PREPARING"], PREPARING:["READY"], READY: o.fulfilment_type==="DELIVERY"?["OUT_FOR_DELIVERY"]:["COMPLETED"], OUT_FOR_DELIVERY:["COMPLETED"] }[o.status] || [];
+  app().innerHTML = `<p style="margin:0 0 8px"><a href="#" id="back" style="color:var(--green);font-weight:600">← All orders</a></p>
+    <h2 class="pg">${esc(o.order_no)} ${pill(o.status)} ${pill(o.payment_status)}</h2>
+    <p class="hint" style="margin:-8px 0 16px">Placed ${esc(o.created_at)} · ${esc(o.channel)}</p>
+    <div class="grid"><div>
+      <div class="box"><h4>Items</h4><table class="t" style="border:0"><tbody>${d.items.map(i=>`<tr><td>${i.qty} ×</td><td>${esc(i.product_name)}<br><small class="hint">${esc(i.sku)} · ${esc(i.pack_size_label||"")} · ${money(i.unit_price)}${i.is_taxable?"":" · zero-rated"}</small></td><td class="n">${money(i.line_total)}</td></tr>`).join("")}
+        <tr><td></td><td>Subtotal</td><td class="n">${money(o.subtotal)}</td></tr><tr><td></td><td>Delivery</td><td class="n">${money(o.delivery_fee)}</td></tr>
+        <tr><td></td><td>GST</td><td class="n">${money(o.gst_amount)}</td></tr><tr><td></td><td>QST</td><td class="n">${money(o.qst_amount)}</td></tr>
+        <tr class="tot"><td></td><td>Total</td><td class="n">${money(o.grand_total)}</td></tr></tbody></table></div>
+      <div class="box"><h4>Update status</h4>
+        <div class="f" style="grid-template-columns:1fr;margin-bottom:10px"><label>Note (optional, saved in history)<input id="note" placeholder="e.g. Driver Ravi, left at door"></label></div>
+        <div class="actions">${next.map(s=>`<button class="b pri" data-s="${s}">Mark ${s.replace(/_/g," ").toLowerCase()}</button>`).join("")}
+        ${!["COMPLETED","CANCELLED"].includes(o.status) ? `<button class="b red" data-s="CANCELLED">Cancel order</button>` : `<span class="hint">No further actions</span>`}</div></div>
+      <div class="box"><h4>History</h4>${d.history.map(h=>`<div style="font-size:14px;margin:7px 0"><small class="hint">${esc(h.changed_at)}</small> · ${h.from_status?esc(h.from_status)+" → ":""}<b>${esc(h.to_status)}</b> · <i>${esc(h.changed_by)}</i> <span class="hint">${esc(h.note||"")}</span></div>`).join("")}</div>
+    </div><div>
+      <div class="box"><h4>Customer</h4><b>${esc(o.cust_name)}</b><br>${esc(o.cust_phone)}<br><a href="mailto:${esc(o.cust_email)}">${esc(o.cust_email)}</a></div>
+      <div class="box"><h4>${o.fulfilment_type==="DELIVERY"?"Delivery":"Pickup"}</h4><b>${esc(o.scheduled_date)}</b> ${esc(o.time_slot||"")}<br>
+        ${o.fulfilment_type==="DELIVERY"?`${esc(o.ship_line1)}${o.ship_line2?", "+esc(o.ship_line2):""}<br>${esc(o.ship_city)} ${esc(o.ship_province)} ${esc(o.ship_postal_code)}`:"Customer collects"}
+        ${o.customer_notes?`<p style="background:#fdf0d9;padding:8px 10px;border-radius:8px;font-size:14px">📝 ${esc(o.customer_notes)}</p>`:""}</div>
+      <div class="box"><h4>Payments</h4>${d.payments.map(p=>`<div style="font-size:14px;margin:6px 0">${pill(p.status)} ${money(p.amount)} · ${esc(p.provider)} ${esc(p.card_brand||"")} ${p.card_last4?"•••• "+esc(p.card_last4):""}<br><small class="hint">${esc(p.provider_ref||"")} · ${esc(p.created_at)}</small></div>`).join("") || `<span class="hint">${o.payment_method==="PAY_ON_DELIVERY"?"Pay on "+o.fulfilment_type.toLowerCase():"No payment yet"}</span>`}</div>
+    </div></div>`;
+  $("#back").onclick = e => { e.preventDefault(); orders(); };
+  $$("[data-s]").forEach(b => b.onclick = guard(async () => {
+    if (b.dataset.s === "CANCELLED" && !b.dataset.sure) { b.dataset.sure = 1; b.textContent = "Click again to confirm cancel"; return; }
+    await api(`/orders/${encodeURIComponent(no)}/status`, { method:"PATCH", body: { status: b.dataset.s, note: $("#note").value } });
+    toast("Status updated"); orderDetail(no);
+  }));
+}
+
+/* ============================================================ PRODUCTS */
+let cats = [], pQ = "", pCat = "", pStatus = "";
+async function products() {
+  if (!cats.length) cats = await api("/categories");
+  const rows = await api("/products");
+  const list = rows.filter(p => (!pCat || p.category === pCat) && (!pStatus || p.status === pStatus) &&
+    (!pQ || (p.sku + " " + p.name_en + " " + (p.name_fr||"")).toLowerCase().includes(pQ.toLowerCase())));
+  app().innerHTML = `<h2 class="pg">Products</h2>
+    <div class="tools">
+      <input id="pq" placeholder="Search SKU or name" value="${esc(pQ)}" style="min-width:200px">
+      <select id="pc"><option value="">All categories</option>${cats.map(c=>`<option value="${c.code}" ${c.code===pCat?"selected":""}>${esc(c.name_en)}</option>`).join("")}</select>
+      <select id="ps"><option value="">All statuses</option>${["ACTIVE","COMING_SOON","DRAFT","OUT_OF_STOCK","HIDDEN","DISCONTINUED"].map(s=>`<option ${s===pStatus?"selected":""}>${s}</option>`).join("")}</select>
+      <span style="flex:1"></span>
+      <button class="b pri" id="add">+ Add product</button><button class="b" id="imp">⬆ Upload Excel</button>
+      <button class="b" id="tpl">⬇ Template</button><button class="b" id="scan">📁 Scan photo folder</button></div>
+    <table class="t"><thead><tr><th></th><th>SKU</th><th>Product</th><th>Category</th><th>Pack</th><th class="n">Price</th><th>Status</th><th class="n">Stock</th><th class="n">Photos</th><th>Updated</th></tr></thead><tbody>
+    ${list.map(p => `<tr class="click" data-id="${p.product_id}"><td>${p.image?`<img class="thumb" src="${esc(p.image.replace(/^\//,""))}" alt="">`:`<div class="thumb"></div>`}</td>
+      <td><b>${esc(p.sku)}</b></td><td>${esc(p.name_en)}<br><small class="hint">${esc(p.name_fr||"")}</small>${p.is_featured?` <span class="pill s-NEW">Popular</span>`:""}</td>
+      <td>${esc(p.category_name)}</td><td>${esc(p.pack_size_label||"")}</td>
+      <td class="n">${p.price > 0 ? `<b>${money(p.price)}</b>` : `<span class="pill s-PENDING">No price</span>`}${p.compare_at_price?`<br><small class="hint"><s>${money(p.compare_at_price)}</s></small>`:""}${p.scheduled_price?`<br><small style="color:#7a4b06">⏱ ${esc(p.scheduled_price)}</small>`:""}</td>
+      <td>${pill(p.status)}</td><td class="n">${p.track_inventory ? p.qty_on_hand : "<span class='hint'>not tracked</span>"}</td><td class="n">${p.image_count}</td><td><small class="hint">${esc(p.updated_at)}</small></td></tr>`).join("") ||
+      `<tr><td colspan="10" style="text-align:center;padding:30px" class="hint">No products match.</td></tr>`}</tbody></table>
+    <p class="hint" style="margin-top:14px">📁 <b>Photo folder:</b> copy photos named by SKU into <code>Tanjofoods\\product-images</code> – e.g. <code>TF-SN-001.jpg</code> (main photo), <code>TF-SN-001_2.jpg</code>, <code>TF-SN-001_3.png</code>.
+      They appear on the shop within 30 seconds, or straight away with <b>Scan photo folder</b>. You can also upload photos inside each product.</p>`;
+  $("#pq").onchange = e => { pQ = e.target.value; products(); };
+  $("#pc").onchange = e => { pCat = e.target.value; products(); };
+  $("#ps").onchange = e => { pStatus = e.target.value; products(); };
+  $("#add").onclick = () => productEditor(null);
+  $("#tpl").onclick = guard(() => download("/products/template", "Tanjo_Foods_Product_Template.xlsx"));
+  $("#imp").onclick = importDialog;
+  $("#scan").onclick = guard(async () => {
+    const r = await api("/images/scan", { method: "POST" });
+    toast(`Photo folder scanned: ${r.matched} photo(s) matched${r.added ? `, ${r.added} new` : ""}${r.removed ? `, ${r.removed} removed` : ""}`);
+    if (r.unmatched.length) modal(`<h3 style="margin:0 0 8px">Files not matching any SKU</h3><p class="hint">These files in <code>${esc(r.folder)}</code> were skipped – rename them to the product SKU (e.g. TF-SN-001.jpg):</p><ul>${r.unmatched.map(f=>`<li>${esc(f)}</li>`).join("")}</ul><button class="b" data-x>Close</button>`);
+    products();
+  });
+  $$("tr[data-id]").forEach(tr => tr.onclick = guard(() => productEditor(Number(tr.dataset.id))));
+}
+
+const PF = [   // [key, label, type, options, css]
+  ["sku","SKU","text",null,""],["category","Category","select",()=>cats.map(c=>[c.code,c.name_en + (c.is_active ? "" : " (inactive)")]),""],
+  ["status","Status","select",["ACTIVE","COMING_SOON","DRAFT","OUT_OF_STOCK","HIDDEN","DISCONTINUED"],""],["sort_order","Sort order","number",null,""],
+  ["name_en","Name (English) *","text",null,"c2"],["name_fr","Name (French)","text",null,"c2"],
+  ["regional_name","Regional / Indian name","text",null,"c2"],["dietary_tags","Dietary tags (comma separated)","text",null,"c2"],
+  ["short_desc_en","Short description (English)","area",null,"c2"],["short_desc_fr","Short description (French)","area",null,"c2"],
+  ["ingredients_en","Ingredients (English)","area",null,"c2"],["ingredients_fr","Ingredients (French)","area",null,"c2"],
+  ["allergens","Allergens (contains)","text",null,"c2"],["may_contain","May contain","text",null,"c2"],
+  ["prep_type","Product type","select",["READY_TO_EAT","READY_TO_COOK","READY_TO_DRINK"],""],["storage_type","Storage","select",["AMBIENT","CHILLED","FROZEN"],""],
+  ["shelf_life_days","Shelf life (days)","number",null,""],["spice_level","Spice level (0-3)","number",null,""],
+  ["pack_size_value","Pack size value","number",null,""],["pack_size_unit","Unit","select",["","g","kg","ml","L","pcs","pack"],""],
+  ["pack_size_label","Pack size label *","text",null,""],["upc_barcode","UPC barcode","text",null,""],
+  ["heating_instructions","Heating / serving instructions","area",null,"c4"],
+  ["wholesale_price","Wholesale price","number",null,""],["cost_price","Cost price (internal)","number",null,""],
+  ["max_order_qty","Max qty per order","number",null,""],["units_per_case","Units per case","number",null,""],
+  ["is_taxable","Taxable (GST + QST)","check",null,""],["is_featured","Show 'Popular' badge","check",null,""],
+];
+function fieldHtml([k,label,type,opts,css], p) {
+  const v = p[k] ?? "";
+  if (type === "check") return `<label class="chk ${css}"><input type="checkbox" name="${k}" ${v ? "checked" : ""}> ${label}</label>`;
+  if (type === "select") { const o = typeof opts === "function" ? opts() : opts.map(x => [x, x ? x.replace(/_/g," ") : "—"]);
+    return `<label class="${css}">${label}<select name="${k}">${o.map(([val,l])=>`<option value="${esc(val)}" ${String(val)===String(v)?"selected":""}>${esc(l)}</option>`).join("")}</select></label>`; }
+  if (type === "area") return `<label class="${css}">${label}<textarea name="${k}">${esc(v)}</textarea></label>`;
+  return `<label class="${css}">${label}<input name="${k}" type="${type}" ${type==="number"?'step="any" min="0"':""} value="${esc(v)}"></label>`;
+}
+async function productEditor(id) {
+  if (!cats.length) cats = await api("/categories");
+  const d = id ? await api("/products/" + id) : { product: { status: "DRAFT", prep_type: "READY_TO_EAT", storage_type: "AMBIENT", category: cats[0]?.code, is_taxable: 1, max_order_qty: 20 }, images: [], price_history: [], sold: { units: 0, revenue: 0 } };
+  const p = d.product, isNew = !id;
+  const pending = d.price_history.filter(h => !h.is_applied);
+  app().innerHTML = `<p style="margin:0 0 8px"><a href="#" id="back" style="color:var(--green);font-weight:600">← All products</a></p>
+    <h2 class="pg">${isNew ? "New product" : esc(p.name_en)} ${isNew ? "" : pill(p.status)}</h2>
+    ${isNew ? "" : `<p class="hint" style="margin:-8px 0 14px">${esc(p.sku)} · sold ${d.sold.units} units / ${money(d.sold.revenue)} · last updated ${esc(p.updated_at)}</p>`}
+    <form id="pf"><div class="grid"><div>
+      <div class="box"><h4>Product details</h4><div class="f">${PF.filter(f => !["wholesale_price","cost_price","max_order_qty","units_per_case","is_taxable","is_featured"].includes(f[0])).map(f => f[0]==="sku" ? `<label>SKU ${isNew?'<span class="hint">(blank = auto)</span>':""}<input name="sku" value="${esc(p.sku||"")}" ${isNew?"":"readonly style='background:#f6f2ec'"}></label>` : fieldHtml(f, p)).join("")}</div></div>
+    </div><div>
+      <div class="box"><h4>Price</h4><div class="f" style="grid-template-columns:1fr 1fr">
+        <label>Selling price (CAD) ${p.price > 0 ? "*" : '<span class="hint">(needed before Active)</span>'}<input name="price" type="number" step="0.01" min="0" value="${p.price > 0 ? esc(p.price) : ""}"></label>
+        <label>'Was' price (strike-through)<input name="compare_at_price" type="number" step="0.01" min="0" value="${esc(p.compare_at_price ?? "")}"></label>
+        ${isNew ? "" : `<label>New price effective from<input name="price_effective_from" type="date" min="${today()}" value="${today()}"></label>
+        <label>Reason / note<input name="price_note" placeholder="e.g. supplier cost increase"></label>`}
+        ${PF.filter(f => ["wholesale_price","cost_price","max_order_qty","units_per_case","is_taxable","is_featured"].includes(f[0])).map(f => fieldHtml(f, p)).join("")}</div>
+        ${isNew ? "" : `<p class="hint" style="margin:10px 0 0">Today's date = price changes immediately. A future date schedules it – the current price stays until then. Every old price is kept with its cut-off date.</p>`}</div>
+      <div class="box"><h4>Stock</h4><div class="f" style="grid-template-columns:1fr 1fr">
+        <label class="chk"><input type="checkbox" name="track_inventory" ${p.track_inventory ? "checked" : ""}> Track stock</label>
+        <label>Units in stock<input name="qty_on_hand" type="number" step="1" value="${esc(p.qty_on_hand ?? 0)}"></label></div>
+        <p class="hint" style="margin:8px 0 0">When tracked, orders reduce stock and the shop shows “Sold out” at 0.</p></div>
+      <div class="actions noprint" style="margin-bottom:16px"><button class="b pri" type="submit">${isNew ? "Create product" : "Save changes"}</button><button class="b" type="button" id="cancel">Cancel</button></div>
+    </div></div></form>
+    ${isNew ? `<p class="hint">Save the product first, then add photos.</p>` : `
+    <div class="grid"><div class="box"><h4>Photos</h4>
+      <div class="photos">${d.images.map(im => `<div class="ph">${im.is_primary ? `<span class="main">MAIN</span>` : ""}<img src="${esc(im.file_name.replace(/^\//,""))}" alt="">
+        <div class="bar">${im.is_primary ? "" : `<button class="b sm" data-primary="${im.image_id}">Make main</button>`}<button class="b sm red" data-del="${im.image_id}">Delete</button></div>
+        <div class="hint" style="font-size:10.5px;padding:0 6px 6px;word-break:break-all;text-align:center">${esc(im.file_name.split("/").pop())}</div></div>`).join("") || `<p class="hint">No photos yet.</p>`}</div>
+      <div style="margin-top:14px" class="actions"><label class="b pri" style="cursor:pointer">⬆ Upload photos<input type="file" id="up" accept="image/jpeg,image/png,image/webp" multiple hidden></label></div>
+      <p class="hint" style="margin:10px 0 0">JPG / PNG / WebP up to 8 MB. Saved as <code>${esc(p.sku)}.jpg</code>, <code>${esc(p.sku)}_2.jpg</code> … in the photo folder. Or copy files with those names into <code>Tanjofoods\\product-images</code>.</p></div>
+    <div class="box"><h4>Price history</h4>
+      ${pending.length ? `<div class="msg ok" style="background:#fdf0d9;color:#7a4b06">⏱ Scheduled: ${pending.map(h=>`<b>${money(h.price)}</b> from ${esc(h.effective_from.slice(0,10))} <button class="b sm" data-unsched="${h.price_id}">Cancel</button>`).join(" · ")}</div>` : ""}
+      <div class="scroll" style="max-height:320px"><table class="t"><thead><tr><th class="n">Price</th><th class="n">Was</th><th>From</th><th>To (cut-off)</th><th>By</th><th>Note</th></tr></thead><tbody>
+      ${d.price_history.filter(h=>h.is_applied).map(h=>`<tr><td class="n"><b>${money(h.price)}</b></td><td class="n">${money(h.compare_at_price)}</td><td><small>${esc(h.effective_from)}</small></td>
+        <td>${h.effective_to ? `<small>${esc(h.effective_to)}</small>` : pill("CURRENT")}</td><td><small>${esc(h.changed_by)}</small></td><td><small class="hint">${esc(h.note||h.source)}</small></td></tr>`).join("")}</tbody></table></div></div></div>`}`;
+  $("#back").onclick = e => { e.preventDefault(); products(); };
+  $("#cancel").onclick = () => products();
+  $("#pf").onsubmit = guard(async e => {
+    e.preventDefault();
+    const f = e.target, body = {};
+    for (const el of f.elements) { if (!el.name) continue; body[el.name] = el.type === "checkbox" ? el.checked : el.value; }
+    if (!isNew) delete body.sku;
+    const r = isNew ? await api("/products", { method: "POST", body }) : await api("/products/" + id, { method: "PUT", body });
+    toast(isNew ? `Created ${r.product.sku}` : r.price_result?.scheduled ? "Saved – new price scheduled" : r.price_result?.changed ? "Saved – price updated (old price kept in history)" : "Saved");
+    productEditor(r.product.product_id);
+  });
+  if (isNew) return;
+  $("#up").onchange = guard(async e => {
+    const fd = new FormData(); [...e.target.files].forEach(f => fd.append("photos", f));
+    toast("Uploading…"); await api(`/products/${id}/images`, { method: "POST", body: fd }); toast("Photos uploaded"); productEditor(id);
+  });
+  $$("[data-primary]").forEach(b => b.onclick = guard(async () => { await api(`/products/${id}/images/${b.dataset.primary}/primary`, { method: "PATCH" }); productEditor(id); }));
+  $$("[data-del]").forEach(b => b.onclick = guard(async () => {
+    if (!b.dataset.sure) { b.dataset.sure = 1; b.textContent = "Sure?"; return; }
+    await api(`/products/${id}/images/${b.dataset.del}`, { method: "DELETE" }); toast("Photo removed (kept in _deleted folder)"); productEditor(id);
+  }));
+  $$("[data-unsched]").forEach(b => b.onclick = guard(async () => { await api(`/products/${id}/scheduled-price/${b.dataset.unsched}`, { method: "DELETE" }); toast("Scheduled price cancelled"); productEditor(id); }));
+}
+
+function importDialog() {
+  const m = modal(`<h3 style="margin:0 0 6px">Upload products from Excel</h3>
+    <p class="hint">Use the Tanjo Foods product template (⬇ Template). Rows are matched by SKU: new SKUs are added, existing ones updated.
+    Blank cells leave the current value unchanged. Price changes are kept in price history. You'll see a preview before anything is saved.</p>
+    <div class="actions" style="margin:14px 0"><label class="b pri" style="cursor:pointer">Choose .xlsx file<input type="file" id="xf" accept=".xlsx" hidden></label><button class="b" data-x>Close</button></div>
+    <div id="pv"></div>`);
+  m.querySelector("#xf").onchange = guard(async e => {
+    const fd = new FormData(); fd.append("file", e.target.files[0]);
+    m.querySelector("#pv").innerHTML = `<p class="hint">Checking…</p>`;
+    const r = await api("/import", { method: "POST", body: fd }), s = r.summary;
+    const fmt = v => v == null || v === "" ? "—" : esc(String(v).length > 40 ? String(v).slice(0,40) + "…" : v);
+    m.querySelector("#pv").innerHTML = `<div class="msg ${s.errors ? "err" : "ok"}">${s.total} rows · <b>${s.insert}</b> new · <b>${s.update}</b> to update · ${s.unchanged} unchanged · <b>${s.errors}</b> with errors (skipped)</div>
+      <div class="scroll" style="max-height:50vh"><table class="t"><thead><tr><th>Row</th><th>SKU</th><th>Product</th><th>Action</th><th>Changes / errors</th></tr></thead><tbody>
+      ${r.rows.map(x => `<tr><td>${x.row}</td><td>${esc(x.sku)}</td><td>${esc(x.name)}</td><td>${pill(x.unchanged ? "SKIP" : x.action)}</td>
+        <td>${x.errors.length ? `<span style="color:var(--red)">${x.errors.map(esc).join("<br>")}</span>` : x.unchanged ? `<span class="hint">No changes</span>` : x.action === "INSERT" ? "New product" :
+          x.changes.map(c => `<div><b>${esc(c.field)}</b>: ${fmt(c.from)} → ${fmt(c.to)}</div>`).join("")}</td></tr>`).join("")}</tbody></table></div>
+      <div class="actions" style="margin-top:14px">${s.insert + s.update ? `<button class="b pri" id="apply">Apply ${s.insert + s.update} change(s)</button>` : `<span class="hint">Nothing to apply.</span>`}</div>`;
+    const ap = m.querySelector("#apply");
+    if (ap) ap.onclick = guard(async () => {
+      ap.disabled = true; ap.textContent = "Saving…";
+      const a = await api(`/import/${r.batchId}/apply`, { method: "POST" });
+      m.querySelector("#pv").innerHTML = `<div class="msg ok">Done: ${a.inserted} added, ${a.updated} updated, ${a.priceChanges} price change(s). ${a.imagesMatched} photo(s) matched in the photo folder.</div><button class="b" data-x>Close</button>`;
+      products();
+    });
+  });
+}
+
+/* ============================================================ REPORTS */
+const REPS = [
+  { id: "orders", name: "Orders", desc: "Order list for a date range and status", f: ["range","basis","status","payment","fulfilment"] },
+  { id: "sales", name: "Sales & tax", desc: "Revenue, GST/QST by day, week or month", f: ["range","group"] },
+  { id: "products", name: "Product sales", desc: "Best sellers, units, revenue", f: ["range"] },
+  { id: "customers", name: "Customers", desc: "Top & regular customers (loyalty)", f: ["period","range","min_orders"] },
+  { id: "prices", name: "Price history", desc: "All prices with cut-off dates", f: ["range","sku"] },
+  { id: "activity", name: "Activity log", desc: "Who signed in, changed status, edited products", f: ["range","user"] },
+];
+let rep = "orders", rq = { from: monthStart(), to: today(), status: "ALL", basis: "created", group: "day", payment: "ALL", fulfilment: "ALL", min_orders: 1, period: "range", sku: "", admin_id: "" };
+let userList = null;
+async function reports() {
+  const r = REPS.find(x => x.id === rep);
+  if (r.f.includes("user") && !userList) userList = await api("/users");
+  const prodList = r.f.includes("sku") ? await api("/products") : [];
+  const F = {
+    range: `<label>From<input type="date" name="from" value="${rq.from}"></label><label>To<input type="date" name="to" value="${rq.to}"></label>
+      <label>Quick<select id="quick"><option value="">—</option><option value="today">Today</option><option value="7">Last 7 days</option><option value="month">This month</option><option value="lastmonth">Last month</option><option value="year">This year</option></select></label>`,
+    basis: `<label>Date is<select name="basis"><option value="created" ${rq.basis==="created"?"selected":""}>Order date</option><option value="scheduled" ${rq.basis==="scheduled"?"selected":""}>Delivery / pickup date</option></select></label>`,
+    status: `<label>Status<select name="status"><option value="ALL">All statuses</option>${["PENDING","CONFIRMED","PREPARING","READY","OUT_FOR_DELIVERY","COMPLETED","CANCELLED"].map(s=>`<option ${s===rq.status?"selected":""}>${s}</option>`).join("")}</select></label>`,
+    payment: `<label>Payment<select name="payment">${["ALL","PAID","UNPAID","FAILED"].map(s=>`<option ${s===rq.payment?"selected":""}>${s}</option>`).join("")}</select></label>`,
+    fulfilment: `<label>Type<select name="fulfilment">${["ALL","DELIVERY","PICKUP"].map(s=>`<option ${s===rq.fulfilment?"selected":""}>${s}</option>`).join("")}</select></label>`,
+    group: `<label>Group by<select name="group">${["day","week","month"].map(s=>`<option ${s===rq.group?"selected":""}>${s}</option>`).join("")}</select></label>`,
+    period: `<label>Period<select name="period"><option value="range" ${rq.period==="range"?"selected":""}>Date range</option><option value="all" ${rq.period==="all"?"selected":""}>All time</option></select></label>`,
+    min_orders: `<label>Min. orders<input type="number" min="1" name="min_orders" value="${rq.min_orders}" style="width:90px"></label>`,
+    sku: `<label>Product<select name="sku"><option value="">All products</option>${prodList.map(p=>`<option value="${esc(p.sku)}" ${p.sku===rq.sku?"selected":""}>${esc(p.sku)} – ${esc(p.name_en)}</option>`).join("")}</select></label>`,
+    user: `<label>User<select name="admin_id"><option value="">All users</option>${(userList||[]).map(u=>`<option value="${u.admin_id}" ${String(u.admin_id)===String(rq.admin_id)?"selected":""}>${esc(u.full_name)}</option>`).join("")}</select></label>`,
+  };
+  app().innerHTML = `<h2 class="pg">Reports</h2><div class="rep">
+    <div class="rep-list">${REPS.map(x=>`<button data-rep="${x.id}" class="${x.id===rep?"on":""}"><b>${x.name}</b><small>${x.desc}</small></button>`).join("")}</div>
+    <div><form id="rf" class="tools f" style="display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px">${r.f.map(k=>F[k]).join("")}
+      <button class="b pri">Run report</button><button class="b" type="button" id="csv">⬇ CSV / Excel</button><button class="b" type="button" onclick="window.print()">🖨 Print</button></form>
+      <div id="rout"><p class="hint">Loading…</p></div></div></div>`;
+  $$("[data-rep]").forEach(b => b.onclick = () => { rep = b.dataset.rep; reports(); });
+  const read = () => { const fd = Object.fromEntries(new FormData($("#rf"))); Object.assign(rq, fd); return new URLSearchParams(Object.fromEntries(r.f.flatMap(k => k === "range" ? [["from", rq.from], ["to", rq.to]] : k === "user" ? [["admin_id", rq.admin_id]] : [[k, rq[k]]]))).toString(); };
+  const q = $("#quick"); if (q) q.onchange = () => {
+    const d = new Date(), iso = x => `${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,"0")}-${String(x.getDate()).padStart(2,"0")}`;
+    const set = (a, b) => { $("#rf").from.value = iso(a); $("#rf").to.value = iso(b); };
+    ({ today: () => set(d, d), 7: () => set(new Date(d - 6 * 864e5), d), month: () => set(new Date(d.getFullYear(), d.getMonth(), 1), d),
+       lastmonth: () => set(new Date(d.getFullYear(), d.getMonth() - 1, 1), new Date(d.getFullYear(), d.getMonth(), 0)), year: () => set(new Date(d.getFullYear(), 0, 1), d) })[q.value]?.();
+  };
+  const run = guard(async () => { const res = await api(`/reports/${rep}?${read()}`); renderReport(res); });
+  $("#rf").onsubmit = e => { e.preventDefault(); run(); };
+  $("#csv").onclick = guard(() => download(`/reports/${rep}?${read()}&format=csv`, `tanjo_${rep}_${today()}.csv`));
+  run();
+}
+function fmtCell(v, type) {
+  if (v == null || v === "") return "";
+  if (type === "money") return money(v);
+  if (type === "pct") return Number(v).toFixed(1) + "%";
+  if (type === "status") return pill(v);
+  if (type === "datetime") return `<small>${esc(v)}</small>`;
+  return esc(v);
+}
+function renderReport(r) {
+  const num = t => ["money","int","pct"].includes(t);
+  $("#rout").innerHTML = `<div class="box" style="padding:14px 16px;margin-bottom:10px"><b style="font-size:17px">${esc(r.title)}</b><br><span class="hint">${esc(r.subtitle)} · ${r.rows.length} row(s)</span></div>
+    <div class="scroll"><table class="t"><thead><tr>${r.columns.map(c=>`<th class="${num(c.type)?"n":""}">${esc(c.label)}</th>`).join("")}</tr></thead><tbody>
+    ${r.rows.map(row=>`<tr>${r.columns.map(c=>`<td class="${num(c.type)?"n":""}">${fmtCell(row[c.key], c.type)}</td>`).join("")}</tr>`).join("") || `<tr><td colspan="${r.columns.length}" style="text-align:center;padding:26px" class="hint">No data for these filters.</td></tr>`}
+    ${r.totals && r.rows.length ? `<tr class="tot">${r.columns.map(c=>`<td class="${num(c.type)?"n":""}">${r.totals[c.key] != null ? (c.type === "status" ? esc(r.totals[c.key]) : fmtCell(r.totals[c.key], c.type)) : ""}</td>`).join("")}</tr>` : ""}
+    </tbody></table></div>`;
+}
+
+/* ============================================================ ENQUIRIES */
+async function enquiries() {
+  const rows = await api("/enquiries");
+  app().innerHTML = `<h2 class="pg">Enquiries</h2>
+    <table class="t"><thead><tr><th>Received</th><th>From</th><th>Type</th><th>Message</th><th>Status</th><th>Updated by</th></tr></thead><tbody>
+    ${rows.map(e=>`<tr><td><small>${esc(e.created_at)}</small></td><td><b>${esc(e.full_name)}</b><br><small><a href="mailto:${esc(e.email)}">${esc(e.email)}</a><br>${esc(e.phone||"")}</small></td>
+      <td>${esc(e.enquiry_type)}<br><small class="hint">${esc(e.product_interest||"")}</small></td><td style="max-width:380px;white-space:pre-wrap">${esc(e.message)}</td>
+      <td><select data-id="${e.enquiry_id}" class="b sm">${["NEW","IN_PROGRESS","REPLIED","CLOSED","SPAM"].map(s=>`<option ${s===e.status?"selected":""}>${s}</option>`).join("")}</select></td>
+      <td><small>${esc(e.updated_by_name || "—")}</small></td></tr>`).join("") || `<tr><td colspan="6" style="text-align:center;padding:30px" class="hint">No enquiries yet.</td></tr>`}</tbody></table>`;
+  $$("select[data-id]").forEach(s => s.onchange = guard(async () => { await api("/enquiries/" + s.dataset.id, { method: "PATCH", body: { status: s.value } }); toast("Saved"); enquiries(); }));
+}
+
+/* ============================================================ USERS */
+async function users() {
+  const rows = userList = await api("/users");
+  app().innerHTML = `<h2 class="pg">Users</h2>
+    <p class="hint" style="margin:-6px 0 14px">Everyone here can sign in and manage orders, products and reports. Every sign-in and change is recorded with the user's name (Reports → Activity log).</p>
+    <div class="grid"><div><table class="t"><thead><tr><th>Name</th><th>E-mail</th><th>Status</th><th>Last sign-in</th><th class="n">Status changes</th><th></th></tr></thead><tbody>
+    ${rows.map(u=>`<tr><td><b>${esc(u.full_name)}</b>${u.admin_id===me.admin_id?' <span class="pill s-NEW">You</span>':""}</td><td>${esc(u.email)}</td>
+      <td>${u.is_active ? pill("ACTIVE") : pill("HIDDEN").replace("HIDDEN","INACTIVE")}</td><td><small>${esc(u.last_login_at || "never")}</small></td><td class="n">${u.status_changes}</td>
+      <td style="white-space:nowrap"><button class="b sm" data-edit="${u.admin_id}">Edit</button>
+        ${u.admin_id===me.admin_id ? "" : `<button class="b sm ${u.is_active?"red":""}" data-act="${u.admin_id}" data-on="${u.is_active?0:1}">${u.is_active?"Deactivate":"Activate"}</button>`}</td></tr>`).join("")}</tbody></table></div>
+    <div class="box"><h4>Add a user</h4><form id="nu" class="f" style="grid-template-columns:1fr">
+      <label>Full name<input name="full_name" required></label><label>E-mail (used to sign in)<input name="email" type="email" required></label>
+      <label>Temporary password <span class="hint">(8+ characters, letters and numbers)</span><input name="password" type="text" required></label>
+      <button class="b pri">Add user</button></form><p class="hint">Give them the e-mail and password; they can change the password after signing in.</p></div></div>`;
+  $("#nu").onsubmit = guard(async e => { e.preventDefault(); await api("/users", { method: "POST", body: Object.fromEntries(new FormData(e.target)) }); toast("User added"); users(); });
+  $$("[data-act]").forEach(b => b.onclick = guard(async () => { await api("/users/" + b.dataset.act, { method: "PATCH", body: { is_active: b.dataset.on === "1" } }); toast("Saved"); users(); }));
+  $$("[data-edit]").forEach(b => b.onclick = () => {
+    const u = rows.find(x => String(x.admin_id) === b.dataset.edit);
+    const m = modal(`<h3 style="margin:0 0 14px">Edit ${esc(u.full_name)}</h3><form class="f" style="grid-template-columns:1fr;max-width:400px" id="eu">
+      <label>Full name<input name="full_name" value="${esc(u.full_name)}"></label>
+      <label>Reset password <span class="hint">(leave blank to keep)</span><input name="password" type="text"></label>
+      <div class="actions"><button class="b pri">Save</button><button type="button" class="b" data-x>Cancel</button></div></form>`);
+    m.querySelector("#eu").onsubmit = guard(async e => { e.preventDefault(); await api("/users/" + u.admin_id, { method: "PATCH", body: Object.fromEntries(new FormData(e.target)) }); m.remove(); toast("Saved"); users(); });
+  });
+}
+
+start();
+})();
+</script>
+</body>
+</html>

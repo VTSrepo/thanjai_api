@@ -17,3 +17,10 @@ Thumbs.db
 .vscode/
 .idea/
 exportdev.sh
+
+# Tanjo Foods runtime files (photos, test e-mails, its own packages / settings when run stand-alone)
+tanjofoods/product-images/*
+!tanjofoods/product-images/_README.txt
+tanjofoods/api/outbox/
+tanjofoods/api/node_modules/
+tanjofoods/api/.env

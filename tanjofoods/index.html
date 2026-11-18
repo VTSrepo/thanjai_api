@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tanjo Foods – Food for Every Moment</title>
+<meta name="description" content="Tanjo Foods – snacks, sauces and frozen food from Montreal. Order online for pickup or delivery. Collations, sauces et produits surgelés – commandez en ligne.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body>
+
+<div class="ribbon" id="ribbon" hidden data-i18n="ribbon_demo">Design preview – prices, pack sizes and product details are sample values pending client confirmation.</div>
+
+<!-- ================= HEADER ================= -->
+<header class="hdr" id="hdr">
+  <div class="wrap">
+    <a href="#/" class="logo" aria-label="Tanjo Foods">
+      <div>
+        <div class="logo-mark">Tanjo<i class="leaf"></i></div>
+        <div class="logo-sub">Foods</div>
+      </div>
+    </a>
+    <nav class="nav" id="nav">
+      <a href="#/" data-i18n="nav_home">Home</a>
+      <a href="#/about" data-i18n="nav_about">About</a>
+      <a href="#/products" data-i18n="nav_products">Products</a>
+      <a href="#/shop" data-i18n="nav_order">Order Online</a>
+      <a href="#/contact" data-i18n="nav_contact">Contact</a>
+    </nav>
+    <div class="hdr-actions">
+      <div class="lang" role="group" aria-label="Language / Langue">
+        <button data-lang="en" title="English">EN</button><button data-lang="fr" title="Français">FR</button>
+      </div>
+      <a href="#/shop" class="btn btn-primary" data-i18n="nav_order">Order Online</a>
+      <button class="cart-btn" id="hdrCart" aria-label="Cart / Panier">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 7h12l-1 12H7L6 7Z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg>
+        <span class="cart-count" id="cartCount" data-n="0"></span>
+      </button>
+    </div>
+    <button class="menu-btn" id="menuBtn" aria-label="Menu">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+    </button>
+  </div>
+</header>
+
+<!-- ================= HOME VIEW ================= -->
+<main class="view on" id="view-home">
+
+  <section class="hero" id="home">
+    <div class="wrap">
+      <div>
+        <span class="eyebrow">Tanjo Foods · Montréal</span>
+        <h1 data-i18n="hero_title">Food for <em>Every</em> Moment.</h1>
+        <p class="lead" data-i18n="hero_lead">Bringing flavour and quality to everyday food experiences. Tanjo Foods offers a growing range of snacks, beverages, sauces and ready to eat meals.</p>
+        <div class="hero-ctas">
+          <a href="#/shop" class="btn btn-primary" data-i18n="nav_order">Order Online</a>
+          <a href="#/products" class="btn btn-ghost" data-i18n="hero_explore">Explore Products</a>
+        </div>
+        <div class="hero-badges">
+          <div><b>15+</b><span data-i18n="badge_years">years in food</span></div>
+          <div><b>3</b><span data-i18n="badge_ranges">product ranges</span></div>
+          <div><b>100%</b><span data-i18n="badge_authentic">authentic recipes</span></div>
+        </div>
+      </div>
+      <div class="hero-art" aria-hidden="true">
+        <div class="disc"></div>
+        <figure class="f1"><img src="assets/img/butter-chicken-sauce.jpg" alt=""></figure>
+        <figure class="f2"><img src="assets/img/fiesta-mix-madras-mix.jpg" alt=""></figure>
+        <figure class="f3"><img src="assets/img/dreamy-chips-thattai.jpg" alt=""></figure>
+        <div class="tag-float"><span class="dot">🌶️</span><div><b data-i18n="float_title">Signature flavours</b><br><span style="color:var(--muted)" data-i18n="float_sub">Snacks · Sauces · Frozen food</span></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="about" id="about">
+    <div class="wrap">
+      <div class="about-media">
+        <div class="big"><img src="assets/img/butter-chicken-sauce.jpg" alt="Tanjo Butter Chicken Sauce"></div>
+        <div class="years"><b>15</b><span data-i18n="years_box">years of<br>experience</span></div>
+      </div>
+      <div>
+        <span class="eyebrow dark" data-i18n="about_eyebrow">Our story</span>
+        <div class="sec-head" style="margin-bottom:18px"><h2 data-i18n="about_title">A Taste of Experience</h2></div>
+        <p data-i18n="about_p1">With 15 years of experience in the food industry, Tanjo Foods brings together a passion for food and a diverse range of products. From flavourful snacks and refreshing beverages to signature sauces and convenient ready to eat meals, our products cater to different tastes and occasions.</p>
+        <p data-i18n="about_p2">Our experience in the food industry shapes our approach to bringing quality food products to customers.</p>
+        <div class="pillars">
+          <div class="pillar"><b data-i18n="pil1_t">Quality first</b><span data-i18n="pil1_s">Carefully sourced ingredients</span></div>
+          <div class="pillar"><b data-i18n="pil2_t">Authentic taste</b><span data-i18n="pil2_s">Recipes rooted in tradition</span></div>
+          <div class="pillar"><b data-i18n="pil3_t">Convenient</b><span data-i18n="pil3_s">Ready to cook &amp; ready to eat</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="products-sec" id="products">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="eyebrow dark" data-i18n="range_eyebrow">Our range</span>
+        <h2 data-i18n="range_title">Explore Our Products</h2>
+        <p data-i18n="range_lead">Discover our range of food products, created for different tastes and everyday occasions.</p>
+      </div>
+      <div class="cat-grid three">
+        <a class="cat-card" href="#/shop/SNACKS">
+          <div class="ph"><img src="assets/img/dreamy-chips-thattai.jpg" alt=""></div>
+          <div class="body"><h3 data-i18n="cat_snacks">Snacks</h3><p data-i18n="cat_snacks_p">A variety of savoury snacks and chips to enjoy anytime.</p><span class="go" data-i18n="cat_snacks_go">Shop snacks →</span></div>
+        </a>
+        <a class="cat-card" href="#/shop/SAUCES">
+          <div class="ph"><img src="assets/img/butter-chicken-sauce.jpg" alt=""></div>
+          <div class="body"><h3 data-i18n="cat_sauces">Butter Chicken Sauce</h3><p data-i18n="cat_sauces_p">A flavourful sauce to bring the taste of butter chicken to your table.</p><span class="go" data-i18n="cat_sauces_go">Shop sauces →</span></div>
+        </a>
+        <a class="cat-card" href="#/shop/FROZEN">
+          <div class="ph"><img src="assets/img/samosa-placeholder.svg" alt=""></div>
+          <div class="body"><h3 data-i18n="cat_frozen">Frozen Food</h3><p data-i18n="cat_frozen_p">Samosas, rolls and South Indian favourites – ready to cook from frozen.</p><span class="go" data-i18n="cat_frozen_go">Shop frozen food →</span></div>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <div class="cta-band">
+    <div class="wrap">
+      <div><h2 data-i18n="cta_title">Hungry already?</h2><p data-i18n="cta_p">Order your favourites online for pickup or delivery across Montreal.</p></div>
+      <a href="#/shop" class="btn btn-light" data-i18n="cta_btn">Start your order →</a>
+    </div>
+  </div>
+
+  <section class="contact" id="contact">
+    <div class="wrap">
+      <div>
+        <div class="sec-head" style="margin-bottom:26px">
+          <span class="eyebrow dark" data-i18n="nav_contact">Contact</span>
+          <h2 data-i18n="contact_title">Get in Touch</h2>
+          <p data-i18n="contact_lead">Have a question about our products or are interested in ordering our products? Fill out the form below and our team will get back to you.</p>
+        </div>
+        <div class="form-card">
+          <form id="enquiryForm" novalidate>
+            <div class="grid2">
+              <div class="field"><label for="fName"><span data-i18n="f_name">Full Name</span> <span class="req">*</span></label><input id="fName" name="full_name" required autocomplete="name"><span class="msg" data-i18n="f_name_err">Please enter your name.</span></div>
+              <div class="field"><label for="fEmail"><span data-i18n="f_email">Email Address</span> <span class="req">*</span></label><input id="fEmail" name="email" type="email" required autocomplete="email"><span class="msg" data-i18n="f_email_err">Please enter a valid email.</span></div>
+            </div>
+            <div class="grid2">
+              <div class="field"><label for="fPhone" data-i18n="f_phone">Phone Number</label><input id="fPhone" name="phone" type="tel" autocomplete="tel"></div>
+              <div class="field"><label for="fType"><span data-i18n="f_type">Type of Enquiry</span> <span class="req">*</span></label>
+                <select id="fType" name="enquiry_type" required>
+                  <option value="" data-i18n="f_select">Select…</option>
+                  <option value="Product Enquiry" data-i18n="f_t1">Product Enquiry</option>
+                  <option value="Wholesale / Bulk Enquiry" data-i18n="f_t2">Wholesale / Bulk Enquiry</option>
+                  <option value="Distribution Partnership" data-i18n="f_t3">Distribution Partnership</option>
+                  <option value="General Enquiry" data-i18n="f_t4">General Enquiry</option>
+                </select><span class="msg" data-i18n="f_type_err">Please choose an enquiry type.</span></div>
+            </div>
+            <div class="field"><label for="fProduct" data-i18n="f_product">Product of Interest</label>
+              <select id="fProduct" name="product_interest">
+                <option value="" data-i18n="f_select">Select…</option>
+                <option value="Chips" data-i18n="f_p1">Chips</option>
+                <option value="Samosas" data-i18n="f_p2">Samosas</option>
+                <option value="Butter chicken sauce" data-i18n="f_p3">Butter chicken sauce</option>
+              </select></div>
+            <div class="field"><label for="fMsg"><span data-i18n="f_msg">Message</span> <span class="req">*</span></label><textarea id="fMsg" name="message" required></textarea><span class="msg" data-i18n="f_msg_err">Please enter a message.</span></div>
+            <button class="btn btn-green" type="submit" data-i18n="f_send">Send enquiry</button>
+          </form>
+          <div class="thanks" id="enquiryThanks">
+            <div class="tick">✓</div>
+            <h3 data-i18n="thx_title">Thank you for contacting Tanjo Foods!</h3>
+            <p data-i18n="thx_p1">We have received your inquiry. Our team will review your message and get back to you shortly.</p>
+            <p data-i18n="thx_p2">We appreciate your interest in Tanjo Foods.</p>
+          </div>
+        </div>
+      </div>
+      <div>
+        <h4 style="font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:8px 0 14px" data-i18n="ci_title">Contact Information</h4>
+        <div class="info-list">
+          <div class="info"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11Z"/><circle cx="12" cy="10" r="2.5"/></svg></span><div><small data-i18n="ci_address">Address</small><b id="ciAddress">8451 Chem. Dalton, Mont-Royal, QC H4T 1V5</b></div></div>
+          <div class="info" id="ciPhoneBox" hidden><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2Z"/></svg></span><div><small data-i18n="ci_phone">Phone</small><b id="ciPhone"></b></div></div>
+          <div class="info" id="ciEmailBox" hidden><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg></span><div><small data-i18n="ci_email">Email</small><b><a id="ciEmail" href="#"></a></b></div></div>
+          <div class="info"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg></span><div><small data-i18n="ci_web">Website</small><b>www.tanjofoods.com</b></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- ================= SHOP VIEW ================= -->
+<main class="view" id="view-shop">
+  <div class="shop-hero">
+    <div class="wrap">
+      <div>
+        <span class="eyebrow" data-i18n="nav_order">Order Online</span>
+        <h1 data-i18n="shop_title">Tanjo Foods Shop</h1>
+        <p id="fulfilNote"></p>
+      </div>
+      <div class="fulfil" role="tablist">
+        <button class="on" data-f="delivery" data-i18n="delivery">Delivery</button>
+        <button data-f="pickup" data-i18n="pickup">Pickup</button>
+      </div>
+    </div>
+  </div>
+  <div class="shop-bar">
+    <div class="wrap">
+      <label class="search"><span class="sr" data-i18n="search_label">Search products</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input id="q" type="search" data-i18n-ph="search_ph" placeholder="Search snacks, sauces, samosas…">
+      </label>
+      <div class="chips" id="chips"></div>
+      <select class="sort" id="sort" aria-label="Sort">
+        <option value="featured" data-i18n="sort_feat">Featured</option>
+        <option value="price-asc" data-i18n="sort_low">Price: low to high</option>
+        <option value="price-desc" data-i18n="sort_high">Price: high to low</option>
+        <option value="name" data-i18n="sort_name">Name A–Z</option>
+      </select>
+    </div>
+  </div>
+  <div class="wrap shop-layout">
+    <div id="catalogue"></div>
+    <aside class="cart" id="cart">
+      <div class="cart-h"><h3 data-i18n="your_order">Your order</h3><button class="x" id="cartClose" aria-label="Close">×</button></div>
+      <div class="cart-items" id="cartItems"></div>
+      <div class="cart-f" id="cartFoot"></div>
+    </aside>
+  </div>
+  <button class="mob-cart hide" id="mobCart"><span id="mobCartN"></span><span id="mobCartT">$0.00</span></button>
+</main>
+
+<!-- ================= FOOTER ================= -->
+<footer>
+  <div class="wrap">
+    <div>
+      <div class="logo-mark">Tanjo<i class="leaf"></i></div>
+      <p style="max-width:300px;margin-top:14px" data-i18n="foot_tag">Food for every moment – snacks, sauces and frozen food from Montreal.</p>
+    </div>
+    <div><h4 data-i18n="foot_shop">Shop</h4><a href="#/shop/SNACKS" data-i18n="cat_snacks">Snacks</a><a href="#/shop/SAUCES" data-i18n="foot_sauces">Sauces</a><a href="#/shop/FROZEN" data-i18n="cat_frozen">Frozen Food</a></div>
+    <div><h4 data-i18n="foot_company">Company</h4><a href="#/about" data-i18n="foot_about">About us</a><a href="#/contact" data-i18n="foot_wholesale">Wholesale enquiries</a><a href="#/contact" data-i18n="foot_dist">Distribution partners</a></div>
+    <div><h4 data-i18n="foot_help">Help</h4><a href="#/contact" data-i18n="foot_contact">Contact us</a><a href="#/shop" data-i18n="foot_delivery">Delivery &amp; pickup</a><a href="#/" data-i18n="foot_privacy">Privacy policy</a></div>
+  </div>
+  <div class="wrap legal"><span>© <span id="yr"></span> Tanjo Foods. <span data-i18n="foot_rights">All rights reserved.</span></span><span>8451 Chem. Dalton, Mont-Royal, QC</span></div>
+</footer>
+
+<!-- Modals -->
+<div class="modal" id="modal" aria-modal="true" role="dialog"><div class="sheet" id="sheet"></div></div>
+<div class="toast" id="toast"></div>
+
+<script src="data/products.js"></script>
+<script src="assets/js/i18n.js"></script>
+<script src="assets/js/app.js"></script>
+</body>
+</html>
